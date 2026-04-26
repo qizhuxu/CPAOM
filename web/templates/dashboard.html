@@ -67,39 +67,17 @@
         </div>
     </div>
     
-    <!-- 服务器列表 -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
-                        <i class="fas fa-server"></i> 服务器列表
-                    </h5>
-                    <button class="btn btn-primary btn-sm" onclick="showAddServerModal()">
-                        <i class="fas fa-plus"></i> 添加服务器
-                    </button>
-                </div>
-                <div class="card-body">
-                    <div id="serversList">
-                        <div class="text-center py-4">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">加载中...</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
     <!-- 快速操作 -->
     <div class="row mt-4">
         <div class="col-md-12">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
                         <i class="fas fa-bolt"></i> 快速操作
                     </h5>
+                    <button class="btn btn-primary btn-sm" onclick="showAddServerModal()">
+                        <i class="fas fa-plus"></i> 添加服务器
+                    </button>
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -220,52 +198,10 @@
                 document.getElementById('activeAccounts').textContent = stats.stats.active_accounts;
                 document.getElementById('disabledAccounts').textContent = stats.stats.disabled_accounts;
             }
-            
-            // 加载服务器列表
-            const servers = await apiCall('GET', '/api/servers/');
-            if (servers.servers) {
-                renderServersList(servers.servers);
-            }
         } catch (error) {
             console.error('加载数据失败:', error);
             showToast('加载数据失败: ' + error.message, 'danger');
         }
-    }
-    
-    function renderServersList(servers) {
-        const container = document.getElementById('serversList');
-        
-        if (servers.length === 0) {
-            container.innerHTML = '<p class="text-muted text-center">暂无服务器，请添加</p>';
-            return;
-        }
-        
-        let html = '<div class="table-responsive"><table class="table table-hover">';
-        html += '<thead><tr><th>名称</th><th>地址</th><th>状态</th><th>操作</th></tr></thead><tbody>';
-        
-        servers.forEach(server => {
-            const statusClass = server.enabled ? 'success' : 'secondary';
-            const statusText = server.enabled ? '启用' : '禁用';
-            
-            html += `
-                <tr>
-                    <td><strong>${server.name}</strong></td>
-                    <td><small>${server.base_url}</small></td>
-                    <td><span class="badge bg-${statusClass}">${statusText}</span></td>
-                    <td>
-                        <button class="btn btn-sm btn-info" onclick="testServer('${server.id}')">
-                            <i class="fas fa-plug"></i> 测试
-                        </button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteServer('${server.id}', '${server.name}')">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-            `;
-        });
-        
-        html += '</tbody></table></div>';
-        container.innerHTML = html;
     }
     
     function showAddServerModal() {
@@ -310,25 +246,6 @@
             }
         } catch (error) {
             showToast('测试失败: ' + error.message, 'danger');
-        }
-    }
-    
-    async function deleteServer(serverId, serverName) {
-        if (!confirm(`确定要删除服务器 "${serverName}" 吗？`)) {
-            return;
-        }
-        
-        try {
-            const result = await apiCall('DELETE', `/api/servers/${serverId}`);
-            
-            if (result.success) {
-                showToast('服务器删除成功', 'success');
-                loadDashboardData();
-            } else {
-                showToast(result.message, 'danger');
-            }
-        } catch (error) {
-            showToast('删除失败: ' + error.message, 'danger');
         }
     }
 </script>

@@ -642,6 +642,8 @@
             try {
                 const result = await apiCall('POST', `/api/accounts/${serverId}/check-usage`);
                 
+                console.log('使用情况检查结果:', result); // 调试输出
+                
                 if (result.success && result.results) {
                     // 统计数据
                     const successCount = result.results.filter(r => r.status === 'success').length;
@@ -667,6 +669,8 @@
                     `;
                     
                     result.results.forEach(item => {
+                        console.log('处理项目:', item); // 调试输出
+                        
                         const statusClass = item.status === 'success' ? 'success' : 'danger';
                         const statusText = item.status === 'success' ? '正常' : '错误';
                         
@@ -675,28 +679,30 @@
                         
                         if (item.status === 'success' && item.usage) {
                             const usage = item.usage;
+                            console.log('使用量数据:', usage); // 调试输出
                             
-                            // 显示使用量
+                            // 尝试不同的字段名
                             if (usage.usage_usd !== undefined) {
                                 usageInfo = `$${usage.usage_usd.toFixed(2)}`;
+                            } else if (usage.total_usage !== undefined) {
+                                usageInfo = `$${usage.total_usage.toFixed(2)}`;
+                            } else if (usage.total_granted !== undefined) {
+                                usageInfo = `$${usage.total_granted.toFixed(2)}`;
                             }
                             
                             // 显示详细信息
                             const details = [];
-                            if (usage.requests !== undefined) {
-                                details.push(`请求: ${usage.requests}`);
-                            }
-                            if (usage.tokens !== undefined) {
-                                details.push(`Token: ${usage.tokens}`);
-                            }
-                            if (usage.limit_usd !== undefined) {
-                                details.push(`限额: $${usage.limit_usd}`);
-                            }
-                            if (usage.remaining_usd !== undefined) {
-                                details.push(`剩余: $${usage.remaining_usd.toFixed(2)}`);
-                            }
                             
-                            detailInfo = details.join(' | ');
+                            // 尝试各种可能的字段
+                            Object.keys(usage).forEach(key => {
+                                if (typeof usage[key] === 'number') {
+                                    details.push(`${key}: ${usage[key]}`);
+                                } else if (typeof usage[key] === 'string') {
+                                    details.push(`${key}: ${usage[key]}`);
+                                }
+                            });
+                            
+                            detailInfo = details.join(' | ') || JSON.stringify(usage);
                         } else if (item.error) {
                             detailInfo = `<span class="text-danger">${item.error}</span>`;
                         }
