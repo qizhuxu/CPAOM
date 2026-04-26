@@ -1,20 +1,28 @@
-name: Deploy to Cloudflare Workers
+name: Deploy Cloudflare Workers
 
 on:
   push:
     branches:
       - main
       - master
+    paths:
+      - 'cf/**'
+      - '.github/workflows/deploy-cloudflare.yml'
   pull_request:
     branches:
       - main
       - master
+    paths:
+      - 'cf/**'
   workflow_dispatch:  # 允许手动触发
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    name: Deploy
+    name: Deploy to Cloudflare
+    defaults:
+      run:
+        working-directory: cf
     
     steps:
       - name: Checkout code
@@ -25,11 +33,12 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
+          cache-dependency-path: cf/package.json
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Run database migrations (if needed)
+      - name: Run database migrations
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
         run: |
           echo "Running D1 migrations..."
@@ -44,6 +53,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy
+          workingDirectory: cf
           secrets: |
             ADMIN_USERNAME
             ADMIN_PASSWORD
@@ -54,7 +64,7 @@ jobs:
       - name: Deployment summary
         if: success()
         run: |
-          echo "✅ Deployment successful!"
+          echo "✅ Cloudflare Workers deployment successful!"
           echo "🌐 Your worker is now live"
           echo "📊 Check the Cloudflare dashboard for details"
 

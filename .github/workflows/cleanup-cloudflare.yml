@@ -1,4 +1,4 @@
-name: Cleanup Old Data
+name: Cleanup Cloudflare Data
 
 on:
   schedule:
@@ -10,6 +10,9 @@ jobs:
   cleanup:
     runs-on: ubuntu-latest
     name: Cleanup Old Database Records
+    defaults:
+      run:
+        working-directory: cf
     
     steps:
       - name: Checkout code
@@ -20,6 +23,7 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
+          cache-dependency-path: cf/package.json
 
       - name: Install dependencies
         run: npm ci

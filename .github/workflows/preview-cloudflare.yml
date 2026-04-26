@@ -1,15 +1,20 @@
-name: Deploy Preview
+name: Deploy Cloudflare Preview
 
 on:
   pull_request:
     branches:
       - main
       - master
+    paths:
+      - 'cf/**'
 
 jobs:
   preview:
     runs-on: ubuntu-latest
     name: Deploy Preview Environment
+    defaults:
+      run:
+        working-directory: cf
     
     steps:
       - name: Checkout code
@@ -20,6 +25,7 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
+          cache-dependency-path: cf/package.json
 
       - name: Install dependencies
         run: npm ci
@@ -30,6 +36,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy --env preview
+          workingDirectory: cf
           secrets: |
             ADMIN_USERNAME
             ADMIN_PASSWORD
@@ -49,5 +56,5 @@ jobs:
               issue_number: prNumber,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `🚀 Preview deployment successful!\n\n📍 Preview URL: ${previewUrl}\n\n⚠️ This is a preview environment. Changes will not affect production.`
+              body: `🚀 Cloudflare Preview deployment successful!\n\n📍 Preview URL: ${previewUrl}\n\n⚠️ This is a preview environment. Changes will not affect production.`
             });
