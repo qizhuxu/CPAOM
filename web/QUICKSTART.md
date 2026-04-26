@@ -1,24 +1,42 @@
 # 快速开始指南
 
-## Docker 部署（最简单）
+## 方式 1：Docker 部署（推荐）⭐
+
+### 使用预构建镜像
 
 1. 确保已安装 Docker 和 Docker Compose
 
-2. 启动服务：
+2. 拉取最新镜像：
 ```bash
 cd CPAOM/web
+docker pull ghcr.io/qizhuxu/cpaom/cpaom-web:latest
+```
+
+3. 启动服务：
+```bash
 docker-compose up -d
 ```
 
-3. 访问 http://localhost:5000
+4. 访问 http://localhost:5000
 
-4. 使用默认账号登录：
+5. 使用默认账号登录：
    - 用户名: `admin`
    - 密码: `admin123`
 
-5. 在仪表板中添加 CPA 服务器
+6. 在仪表板中添加 CPA 服务器
 
-## Windows 本地部署
+### 本地构建镜像
+
+如果需要自定义修改：
+
+1. 编辑 `docker-compose.yml`，注释 `image` 行，取消注释 `build` 行
+
+2. 构建并启动：
+```bash
+docker-compose up -d --build
+```
+
+## 方式 2：Windows 本地部署
 
 1. 确保已安装 Python 3.8+
 
@@ -35,7 +53,7 @@ run.bat
 
 4. 访问 http://localhost:5000
 
-## Linux/macOS 本地部署
+## 方式 3：Linux/macOS 本地部署
 
 1. 确保已安装 Python 3.8+
 

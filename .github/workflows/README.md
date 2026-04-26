@@ -56,12 +56,12 @@
 
 **从 GitHub Container Registry：**
 ```bash
-docker pull ghcr.io/你的用户名/仓库名/cpaom-web:latest
+docker pull ghcr.io/qizhuxu/cpaom/cpaom-web:latest
 ```
 
 **从 Docker Hub（如果配置了）：**
 ```bash
-docker pull 你的用户名/cpaom-web:latest
+docker pull qizhuxu/cpaom-web:latest
 ```
 
 ### 运行容器
@@ -74,7 +74,7 @@ docker run -d \
   -v $(pwd)/config.json:/app/config.json \
   -e ADMIN_USERNAME=admin \
   -e ADMIN_PASSWORD=your-password \
-  ghcr.io/你的用户名/仓库名/cpaom-web:latest
+  ghcr.io/qizhuxu/cpaom/cpaom-web:latest
 ```
 
 ### 使用 Docker Compose
@@ -83,7 +83,7 @@ docker run -d \
 version: '3.8'
 services:
   cpaom-web:
-    image: ghcr.io/你的用户名/仓库名/cpaom-web:latest
+    image: ghcr.io/qizhuxu/cpaom/cpaom-web:latest
     ports:
       - "5000:5000"
     volumes:
@@ -161,8 +161,8 @@ Web Docker 工作流包含自动安全扫描：
 在 README.md 中添加状态徽章：
 
 ```markdown
-![Deploy Cloudflare](https://github.com/你的用户名/仓库名/actions/workflows/deploy-cloudflare.yml/badge.svg)
-![Build Docker](https://github.com/你的用户名/仓库名/actions/workflows/build-web-docker.yml/badge.svg)
+![Deploy Cloudflare](https://github.com/qizhuxu/CPAOM/actions/workflows/deploy-cloudflare.yml/badge.svg)
+![Build Docker](https://github.com/qizhuxu/CPAOM/actions/workflows/build-web-docker.yml/badge.svg)
 ```
 
 ---

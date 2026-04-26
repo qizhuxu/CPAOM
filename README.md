@@ -60,6 +60,7 @@ npx wrangler deploy
 **快速开始:**
 ```bash
 cd CPAOM/web
+docker pull ghcr.io/qizhuxu/cpaom/cpaom-web:latest
 docker-compose up -d
 ```
 

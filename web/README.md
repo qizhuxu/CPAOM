@@ -15,16 +15,35 @@
 
 ## 🚀 快速开始
 
-### Docker 部署（推荐）
+### 方式 1：使用预构建镜像（推荐）⭐
+
+直接使用 GitHub Container Registry 的预构建镜像：
 
 ```bash
 cd CPAOM/web
+
+# 拉取最新镜像
+docker pull ghcr.io/qizhuxu/cpaom/cpaom-web:latest
+
+# 启动容器
 docker-compose up -d
 ```
 
 访问 http://localhost:5000，默认账号：`admin` / `admin123`
 
-### 本地部署
+### 方式 2：本地构建镜像
+
+如果需要自定义修改，可以本地构建：
+
+```bash
+cd CPAOM/web
+
+# 编辑 docker-compose.yml，注释 image 行，取消注释 build 行
+# 然后构建并启动
+docker-compose up -d --build
+```
+
+### 方式 3：本地部署（不使用 Docker）
 
 **Windows:**
 ```bash

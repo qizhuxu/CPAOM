@@ -2,7 +2,9 @@ version: '3.8'
 
 services:
   cpa-manager:
-    build: .
+    image: ghcr.io/qizhuxu/cpaom/cpaom-web:latest
+    # 如果需要本地构建，注释上面的 image 行，取消注释下面的 build 行
+    # build: .
     container_name: cpa-manager-web
     ports:
       - "5000:5000"
