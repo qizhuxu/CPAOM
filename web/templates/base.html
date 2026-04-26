@@ -429,21 +429,32 @@
             try {
                 const result = await apiCall('GET', `/api/accounts/${serverId}`);
                 
-                if (result.files && result.files.length > 0) {
-                    let html = '<div class="table-responsive"><table class="table table-hover"><thead><tr><th>文件名</th><th>状态</th><th>操作</th></tr></thead><tbody>';
+                if (result.accounts && result.accounts.length > 0) {
+                    let html = '<div class="table-responsive"><table class="table table-hover"><thead><tr><th>邮箱</th><th>文件名</th><th>状态</th><th>操作</th></tr></thead><tbody>';
                     
-                    result.files.forEach(file => {
-                        const statusClass = file.disabled ? 'danger' : 'success';
-                        const statusText = file.disabled ? '已禁用' : '活跃';
+                    result.accounts.forEach(account => {
+                        const statusClass = account.disabled ? 'danger' : 'success';
+                        const statusText = account.disabled ? '已禁用' : '活跃';
+                        const email = account.email || '-';
+                        const filename = account.name || account.filename || '-';
                         
                         html += `
                             <tr>
-                                <td>${file.filename}</td>
+                                <td>${email}</td>
+                                <td><small>${filename}</small></td>
                                 <td><span class="badge bg-${statusClass}">${statusText}</span></td>
                                 <td>
-                                    <button class="btn btn-sm btn-primary" onclick="reviveSingleToken('${serverId}', '${file.filename}')">
+                                    <button class="btn btn-sm btn-primary" onclick="reviveSingleToken('${serverId}', '${filename}', '${email}')">
                                         <i class="fas fa-sync"></i> 复活
                                     </button>
+                                    ${account.disabled ? 
+                                        `<button class="btn btn-sm btn-success" onclick="enableAccount('${serverId}', '${filename}')">
+                                            <i class="fas fa-check"></i> 启用
+                                        </button>` :
+                                        `<button class="btn btn-sm btn-warning" onclick="disableAccount('${serverId}', '${filename}')">
+                                            <i class="fas fa-ban"></i> 禁用
+                                        </button>`
+                                    }
                                 </td>
                             </tr>
                         `;
@@ -470,8 +481,12 @@
             
             try {
                 const result = await apiCall('POST', `/api/accounts/${serverId}/check-usage`);
-                showToast(`检查完成！成功: ${result.success_count}, 失败: ${result.error_count}`, 'success');
-                loadAccounts();
+                if (result.success) {
+                    showToast(`检查完成！共检查 ${result.total} 个账号`, 'success');
+                    loadAccounts();
+                } else {
+                    showToast('检查失败: ' + (result.error || '未知错误'), 'danger');
+                }
             } catch (error) {
                 showToast('检查失败: ' + error.message, 'danger');
             }
@@ -487,8 +502,41 @@
             showToast('正在下载...', 'info');
             
             try {
-                const result = await apiCall('POST', `/api/operations/${serverId}/download`);
-                showToast(`下载完成！文件: ${result.filename}`, 'success');
+                // 使用 fetch 下载文件
+                const response = await fetch(`/api/operations/${serverId}/download`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    
+                    // 从响应头获取文件名
+                    const contentDisposition = response.headers.get('Content-Disposition');
+                    let filename = 'accounts.zip';
+                    if (contentDisposition) {
+                        const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(contentDisposition);
+                        if (matches != null && matches[1]) {
+                            filename = matches[1].replace(/['"]/g, '');
+                        }
+                    }
+                    
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    
+                    showToast('下载完成！', 'success');
+                } else {
+                    const error = await response.json();
+                    showToast('下载失败: ' + (error.error || '未知错误'), 'danger');
+                }
             } catch (error) {
                 showToast('下载失败: ' + error.message, 'danger');
             }
@@ -514,8 +562,19 @@
             showToast('正在上传...', 'info');
             
             try {
-                const result = await apiCall('POST', `/api/operations/${serverId}/upload`, formData);
-                showToast(`上传完成！成功: ${result.success_count}, 失败: ${result.error_count}`, 'success');
+                const response = await fetch(`/api/operations/${serverId}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast(`上传完成！成功: ${result.success_count}, 失败: ${result.failed_count}`, 'success');
+                    fileInput.value = '';
+                } else {
+                    showToast('上传失败: ' + (result.error || '未知错误'), 'danger');
+                }
             } catch (error) {
                 showToast('上传失败: ' + error.message, 'danger');
             }
@@ -531,22 +590,85 @@
             showToast('正在复活 Token...', 'info');
             
             try {
-                const result = await apiCall('POST', `/api/operations/${serverId}/batch-revive`);
-                showToast(`复活完成！成功: ${result.success_count}, 失败: ${result.error_count}`, 'success');
+                // 先获取账号列表
+                const accountsResult = await apiCall('GET', `/api/accounts/${serverId}`);
+                
+                if (!accountsResult.accounts || accountsResult.accounts.length === 0) {
+                    showToast('没有可复活的账号', 'warning');
+                    return;
+                }
+                
+                // 准备账号数据
+                const accounts = accountsResult.accounts
+                    .filter(acc => !acc.disabled)
+                    .map(acc => ({
+                        email: acc.email || '',
+                        filename: acc.name || acc.filename || ''
+                    }));
+                
+                if (accounts.length === 0) {
+                    showToast('没有活跃账号需要复活', 'warning');
+                    return;
+                }
+                
+                const result = await apiCall('POST', `/api/operations/${serverId}/batch-revive`, { accounts });
+                
+                if (result.success) {
+                    showToast(`复活完成！成功: ${result.success_count}, 失败: ${result.failed_count}`, 'success');
+                } else {
+                    showToast('复活失败: ' + (result.error || '未知错误'), 'danger');
+                }
             } catch (error) {
                 showToast('复活失败: ' + error.message, 'danger');
             }
         }
         
-        async function reviveSingleToken(serverId, filename) {
+        async function reviveSingleToken(serverId, filename, email) {
             showToast('正在复活 Token...', 'info');
             
             try {
-                const result = await apiCall('POST', `/api/accounts/${serverId}/${filename}/revive`);
-                showToast('Token 复活成功', 'success');
-                loadAccounts();
+                const result = await apiCall('POST', `/api/accounts/${serverId}/${filename}/revive`, { email });
+                
+                if (result.success) {
+                    showToast('Token 复活成功', 'success');
+                    loadAccounts();
+                } else {
+                    showToast('复活失败: ' + (result.message || '未知错误'), 'danger');
+                }
             } catch (error) {
                 showToast('复活失败: ' + error.message, 'danger');
+            }
+        }
+        
+        async function enableAccount(serverId, filename) {
+            try {
+                const result = await apiCall('POST', `/api/accounts/${serverId}/${filename}/enable`);
+                
+                if (result.success) {
+                    showToast('账号已启用', 'success');
+                    loadAccounts();
+                } else {
+                    showToast('启用失败: ' + (result.message || '未知错误'), 'danger');
+                }
+            } catch (error) {
+                showToast('启用失败: ' + error.message, 'danger');
+            }
+        }
+        
+        async function disableAccount(serverId, filename) {
+            if (!confirm('确定要禁用此账号吗？')) return;
+            
+            try {
+                const result = await apiCall('POST', `/api/accounts/${serverId}/${filename}/disable`);
+                
+                if (result.success) {
+                    showToast('账号已禁用', 'success');
+                    loadAccounts();
+                } else {
+                    showToast('禁用失败: ' + (result.message || '未知错误'), 'danger');
+                }
+            } catch (error) {
+                showToast('禁用失败: ' + error.message, 'danger');
             }
         }
         
