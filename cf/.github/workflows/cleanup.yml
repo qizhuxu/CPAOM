@@ -1,0 +1,50 @@
+name: Cleanup Old Data
+
+on:
+  schedule:
+    # 每周日凌晨 3 点执行
+    - cron: '0 3 * * 0'
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    name: Cleanup Old Database Records
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run cleanup script
+        run: |
+          echo "Running database cleanup..."
+          npx wrangler d1 execute cpa-manager-db --remote --command "
+            DELETE FROM sync_logs WHERE created_at < datetime('now', '-90 days');
+            DELETE FROM task_executions WHERE started_at < datetime('now', '-90 days');
+            DELETE FROM audit_logs WHERE created_at < datetime('now', '-90 days');
+            DELETE FROM config_backups WHERE id NOT IN (
+              SELECT id FROM (
+                SELECT id, ROW_NUMBER() OVER (PARTITION BY server_id ORDER BY backup_time DESC) as rn
+                FROM config_backups
+              ) WHERE rn <= 10
+            );
+          "
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Cleanup summary
+        if: success()
+        run: |
+          echo "✅ Database cleanup completed!"
+          echo "🗑️  Removed records older than 90 days"
+          echo "📦 Kept latest 10 config backups per server"

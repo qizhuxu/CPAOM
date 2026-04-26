@@ -1,0 +1,25 @@
+{
+  "cpa_servers": [
+    {
+      "id": "server1",
+      "name": "主服务器",
+      "base_url": "https://your-cpa-server.com",
+      "token": "mgt-your-management-token",
+      "enable_token_revive": true,
+      "enabled": true
+    },
+    {
+      "id": "server2",
+      "name": "备用服务器",
+      "base_url": "https://backup-cpa-server.com",
+      "token": "mgt-backup-token",
+      "enable_token_revive": true,
+      "enabled": false
+    }
+  ],
+  "settings": {
+    "max_workers": 10,
+    "auto_sync_interval": 3600,
+    "token_revive_max_attempts": 3
+  }
+}

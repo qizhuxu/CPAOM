@@ -1,0 +1,27 @@
+{
+  "name": "cpa-manager-cf",
+  "version": "1.0.0",
+  "description": "CPA Account Manager on Cloudflare",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "kv:create": "wrangler kv:namespace create ACCOUNTS",
+    "d1:create": "wrangler d1 create cpa-manager-db",
+    "d1:migrate:local": "wrangler d1 migrations apply cpa-manager-db --local",
+    "d1:migrate:remote": "wrangler d1 migrations apply cpa-manager-db --remote",
+    "d1:list": "wrangler d1 list"
+  },
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "cpa",
+    "chatgpt"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}

@@ -1,0 +1,21 @@
+node_modules/
+.wrangler/
+.dev.vars
+.env
+*.log
+dist/
+.DS_Store
+
+# 本地配置
+wrangler.toml.local
+*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 操作系统
+Thumbs.db
+.DS_Store

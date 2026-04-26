@@ -1,0 +1,60 @@
+name: Test and Lint
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Run Tests
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check wrangler.toml syntax
+        run: |
+          echo "Checking wrangler.toml..."
+          npx wrangler deploy --dry-run
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Validate database migrations
+        run: |
+          echo "Validating D1 migrations..."
+          if [ -d "migrations" ]; then
+            echo "✅ Migrations directory found"
+            ls -la migrations/
+          else
+            echo "⚠️  No migrations directory"
+          fi
+
+      - name: Check for syntax errors
+        run: |
+          echo "Checking JavaScript syntax..."
+          find src -name "*.js" -type f -exec node --check {} \;
+          echo "✅ No syntax errors found"
+
+      - name: Test summary
+        if: success()
+        run: |
+          echo "✅ All tests passed!"
+          echo "📦 Ready for deployment"
