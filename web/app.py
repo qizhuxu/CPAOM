@@ -66,6 +66,13 @@ app.register_blueprint(tasks.bp)
 from routes import local_accounts
 app.register_blueprint(local_accounts.bp)
 
+# 导入并注册日志蓝图
+from routes import logs
+app.register_blueprint(logs.bp)
+
+# 初始化日志系统
+logs.setup_logging(app)
+
 
 @app.route('/')
 @login_required

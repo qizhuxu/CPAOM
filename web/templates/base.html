@@ -147,6 +147,9 @@
             <a class="nav-link" href="#" onclick="showSyncPage(); return false;">
                 <i class="fas fa-sync"></i> 同步备份
             </a>
+            <a class="nav-link" href="#" onclick="showLogsPage(); return false;">
+                <i class="fas fa-file-alt"></i> 系统日志
+            </a>
             
             <hr style="border-color: rgba(255,255,255,0.1); margin: 20px;">
             
@@ -549,6 +552,71 @@
             loadLocalStats();
             loadLocalAccounts();
             loadServersList('localServerFilter');
+        }
+        
+        function showLogsPage() {
+            if (currentPage === 'logs') return;
+            currentPage = 'logs';
+            
+            const content = document.querySelector('.main-content');
+            content.innerHTML = `
+                <div class="container-fluid">
+                    <h1 class="mb-4"><i class="fas fa-file-alt"></i> 系统日志</h1>
+                    
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">日志控制</h5>
+                            <div>
+                                <button class="btn btn-sm btn-secondary me-2" onclick="pauseLogs()">
+                                    <i class="fas fa-pause" id="pauseIcon"></i> <span id="pauseText">暂停</span>
+                                </button>
+                                <button class="btn btn-sm btn-warning me-2" onclick="clearLogsDisplay()">
+                                    <i class="fas fa-eraser"></i> 清空显示
+                                </button>
+                                <button class="btn btn-sm btn-primary" onclick="downloadLogs()">
+                                    <i class="fas fa-download"></i> 下载日志
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-md-3">
+                                    <label class="form-label">日志级别</label>
+                                    <select class="form-select form-select-sm" id="logLevelFilter" onchange="filterLogs()">
+                                        <option value="">全部</option>
+                                        <option value="DEBUG">DEBUG</option>
+                                        <option value="INFO">INFO</option>
+                                        <option value="WARNING">WARNING</option>
+                                        <option value="ERROR">ERROR</option>
+                                        <option value="CRITICAL">CRITICAL</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">搜索</label>
+                                    <input type="text" class="form-control form-control-sm" id="logSearchInput" placeholder="搜索日志内容..." oninput="filterLogs()">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">自动滚动</label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="autoScrollSwitch" checked>
+                                        <label class="form-check-label" for="autoScrollSwitch">启用</label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="logContainer" style="height: 600px; overflow-y: auto; background: #1e1e1e; color: #d4d4d4; font-family: 'Courier New', monospace; font-size: 13px; padding: 15px; border-radius: 5px;">
+                                <div class="text-center py-4">
+                                    <div class="spinner-border text-light" role="status"></div>
+                                    <p class="mt-2 text-light">正在连接日志流...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 初始化日志流
+            initLogStream();
         }
         
         // 辅助函数
@@ -1144,8 +1212,189 @@
                 showToast('删除失败: ' + error.message, 'danger');
             }
         }
+        
+        // ==================== 日志流相关函数 ====================
+        let logEventSource = null;
+        let logsPaused = false;
+        let allLogs = [];
+        
+        function initLogStream() {
+            // 关闭现有连接
+            if (logEventSource) {
+                logEventSource.close();
+            }
+            
+            const logContainer = document.getElementById('logContainer');
+            logContainer.innerHTML = '';
+            allLogs = [];
+            
+            // 创建 EventSource 连接
+            logEventSource = new EventSource('/api/logs/stream');
+            
+            logEventSource.onmessage = function(event) {
+                if (logsPaused) return;
+                
+                try {
+                    const logEntry = JSON.parse(event.data);
+                    allLogs.push(logEntry);
+                    
+                    // 限制日志数量
+                    if (allLogs.length > 1000) {
+                        allLogs.shift();
+                    }
+                    
+                    // 应用过滤器
+                    if (shouldDisplayLog(logEntry)) {
+                        appendLogEntry(logEntry);
+                    }
+                } catch (e) {
+                    console.error('解析日志失败:', e);
+                }
+            };
+            
+            logEventSource.onerror = function(error) {
+                console.error('日志流错误:', error);
+                logContainer.innerHTML += `<div style="color: #f48771;">[系统] 日志流连接断开，尝试重连...</div>`;
+                
+                // 5秒后重连
+                setTimeout(() => {
+                    if (currentPage === 'logs') {
+                        initLogStream();
+                    }
+                }, 5000);
+            };
+            
+            logEventSource.onopen = function() {
+                console.log('日志流已连接');
+            };
+        }
+        
+        function appendLogEntry(logEntry) {
+            const logContainer = document.getElementById('logContainer');
+            const logLine = document.createElement('div');
+            logLine.style.marginBottom = '2px';
+            logLine.style.lineHeight = '1.4';
+            
+            // 根据日志级别设置颜色
+            let levelColor = '#d4d4d4';
+            switch(logEntry.level) {
+                case 'DEBUG':
+                    levelColor = '#858585';
+                    break;
+                case 'INFO':
+                    levelColor = '#4ec9b0';
+                    break;
+                case 'WARNING':
+                    levelColor = '#dcdcaa';
+                    break;
+                case 'ERROR':
+                    levelColor = '#f48771';
+                    break;
+                case 'CRITICAL':
+                    levelColor = '#ff0000';
+                    break;
+            }
+            
+            logLine.innerHTML = `
+                <span style="color: #858585;">${logEntry.timestamp}</span>
+                <span style="color: ${levelColor}; font-weight: bold;"> [${logEntry.level}]</span>
+                <span style="color: #569cd6;"> ${logEntry.name}:</span>
+                <span style="color: #d4d4d4;"> ${escapeHtml(logEntry.message)}</span>
+            `;
+            
+            logContainer.appendChild(logLine);
+            
+            // 自动滚动到底部
+            if (document.getElementById('autoScrollSwitch').checked) {
+                logContainer.scrollTop = logContainer.scrollHeight;
+            }
+        }
+        
+        function shouldDisplayLog(logEntry) {
+            const levelFilter = document.getElementById('logLevelFilter').value;
+            const searchText = document.getElementById('logSearchInput').value.toLowerCase();
+            
+            // 级别过滤
+            if (levelFilter && logEntry.level !== levelFilter) {
+                return false;
+            }
+            
+            // 搜索过滤
+            if (searchText) {
+                const searchableText = `${logEntry.message} ${logEntry.name}`.toLowerCase();
+                if (!searchableText.includes(searchText)) {
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+        
+        function filterLogs() {
+            const logContainer = document.getElementById('logContainer');
+            logContainer.innerHTML = '';
+            
+            allLogs.forEach(logEntry => {
+                if (shouldDisplayLog(logEntry)) {
+                    appendLogEntry(logEntry);
+                }
+            });
+        }
+        
+        function pauseLogs() {
+            logsPaused = !logsPaused;
+            const pauseIcon = document.getElementById('pauseIcon');
+            const pauseText = document.getElementById('pauseText');
+            
+            if (logsPaused) {
+                pauseIcon.className = 'fas fa-play';
+                pauseText.textContent = '继续';
+            } else {
+                pauseIcon.className = 'fas fa-pause';
+                pauseText.textContent = '暂停';
+            }
+        }
+        
+        function clearLogsDisplay() {
+            const logContainer = document.getElementById('logContainer');
+            logContainer.innerHTML = '';
+            allLogs = [];
+            showToast('日志显示已清空', 'info');
+        }
+        
+        function downloadLogs() {
+            const logText = allLogs.map(log => 
+                `${log.timestamp} [${log.level}] ${log.name}: ${log.message}`
+            ).join('\n');
+            
+            const blob = new Blob([logText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `cpa-logs-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showToast('日志已下载', 'success');
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // 页面卸载时关闭日志流
+        window.addEventListener('beforeunload', function() {
+            if (logEventSource) {
+                logEventSource.close();
+            }
+        });
     </script>
     
     {% block extra_js %}{% endblock %}
 </body>
 </html>
+

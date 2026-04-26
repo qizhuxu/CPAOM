@@ -2,6 +2,7 @@
 服务器管理路由
 """
 
+import logging
 from flask import Blueprint, render_template, request, jsonify
 from flask_login import login_required, current_user
 from utils.config_manager import ConfigManager
@@ -10,6 +11,7 @@ import uuid
 
 bp = Blueprint('servers', __name__, url_prefix='/api/servers')
 config_manager = ConfigManager()
+logger = logging.getLogger(__name__)
 
 
 @bp.route('/', methods=['GET'])
@@ -25,6 +27,8 @@ def list_servers():
 def add_server():
     """添加服务器"""
     data = request.get_json()
+    
+    logger.info(f"用户 {current_user.username} 尝试添加服务器: {data.get('name')}")
     
     # 生成唯一 ID
     server_id = str(uuid.uuid4())[:8]
@@ -44,6 +48,8 @@ def add_server():
         files = client.get_auth_files()
         
         config_manager.add_server(server)
+        
+        logger.info(f"服务器添加成功: {server['name']} (ID: {server_id}), 找到 {len(files)} 个认证文件")
         
         return jsonify({
             "success": True,
