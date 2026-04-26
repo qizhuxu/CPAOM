@@ -94,7 +94,7 @@
     
     <!-- 快速操作 -->
     <div class="row mt-4">
-        <div class="col-md-6">
+        <div class="col-md-12">
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0">
@@ -102,38 +102,62 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div class="d-grid gap-2">
-                        <button class="btn btn-outline-primary" onclick="showAccountsPage()">
-                            <i class="fas fa-search"></i> 检查账号使用情况
-                        </button>
-                        <button class="btn btn-outline-success" onclick="showOperationsPage()">
-                            <i class="fas fa-download"></i> 批量下载账号
-                        </button>
-                        <button class="btn btn-outline-info" onclick="showSyncPage()">
-                            <i class="fas fa-sync"></i> 同步备份数据
-                        </button>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="d-grid">
+                                <button class="btn btn-outline-primary btn-lg" onclick="showAccountsPage()">
+                                    <i class="fas fa-users fa-2x mb-2"></i>
+                                    <div>账号管理</div>
+                                    <small class="text-muted">查看和管理账号</small>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="d-grid">
+                                <button class="btn btn-outline-success btn-lg" onclick="showOperationsPage()">
+                                    <i class="fas fa-tasks fa-2x mb-2"></i>
+                                    <div>批量操作</div>
+                                    <small class="text-muted">下载/上传/复活</small>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="d-grid">
+                                <button class="btn btn-outline-info btn-lg" onclick="showSyncPage()">
+                                    <i class="fas fa-sync fa-2x mb-2"></i>
+                                    <div>同步备份</div>
+                                    <small class="text-muted">备份到本地数据库</small>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="d-grid">
+                                <button class="btn btn-outline-warning btn-lg" onclick="showLocalAccountsPage()">
+                                    <i class="fas fa-database fa-2x mb-2"></i>
+                                    <div>本地账号</div>
+                                    <small class="text-muted">查看本地备份</small>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-        
-        <div class="col-md-6">
+    </div>
+    
+    <!-- 最近活动 -->
+    <div class="row mt-4">
+        <div class="col-md-12">
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0">
-                        <i class="fas fa-info-circle"></i> 系统信息
+                        <i class="fas fa-history"></i> 最近活动
                     </h5>
                 </div>
                 <div class="card-body">
-                    <p><strong>版本:</strong> 1.0.0</p>
-                    <p><strong>部署方式:</strong> Docker / 本地</p>
-                    <p><strong>数据库:</strong> SQLite</p>
-                    <p><strong>当前用户:</strong> {{ current_user.username }}</p>
-                    <hr>
-                    <p class="mb-0 small text-muted">
-                        <i class="fas fa-book"></i> 
-                        <a href="https://github.com/qizhuxu/CPAOM" target="_blank">查看完整文档</a>
-                    </p>
+                    <div id="recentActivity">
+                        <p class="text-muted text-center">暂无活动记录</p>
+                    </div>
                 </div>
             </div>
         </div>

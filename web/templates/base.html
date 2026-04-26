@@ -266,9 +266,14 @@
                     <div class="card" id="accountsCard" style="display: none;">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h5 class="mb-0">账号列表</h5>
-                            <button class="btn btn-primary btn-sm" onclick="checkUsage()">
-                                <i class="fas fa-sync"></i> 检查使用情况
-                            </button>
+                            <div>
+                                <button class="btn btn-primary btn-sm me-2" onclick="checkUsage()">
+                                    <i class="fas fa-sync"></i> 检查使用情况
+                                </button>
+                                <button class="btn btn-success btn-sm" onclick="loadAccounts()">
+                                    <i class="fas fa-refresh"></i> 刷新
+                                </button>
+                            </div>
                         </div>
                         <div class="card-body">
                             <div id="accountsList">
@@ -276,6 +281,16 @@
                                     <div class="spinner-border text-primary" role="status"></div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 使用情况结果 -->
+                    <div class="card mt-4" id="usageResultCard" style="display: none;">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-chart-bar"></i> 使用情况统计</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="usageResults"></div>
                         </div>
                     </div>
                 </div>
@@ -616,17 +631,101 @@
                 return;
             }
             
-            showToast('正在检查使用情况...', 'info');
+            showToast('正在检查使用情况，请稍候...', 'info');
+            
+            // 显示加载状态
+            const resultCard = document.getElementById('usageResultCard');
+            const resultsDiv = document.getElementById('usageResults');
+            resultCard.style.display = 'block';
+            resultsDiv.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div><p class="mt-2">正在检查账号使用情况...</p></div>';
             
             try {
                 const result = await apiCall('POST', `/api/accounts/${serverId}/check-usage`);
-                if (result.success) {
-                    showToast(`检查完成！共检查 ${result.total} 个账号`, 'success');
-                    loadAccounts();
+                
+                if (result.success && result.results) {
+                    // 统计数据
+                    const successCount = result.results.filter(r => r.status === 'success').length;
+                    const errorCount = result.results.filter(r => r.status === 'error').length;
+                    
+                    let html = `
+                        <div class="alert alert-info">
+                            <strong>检查完成！</strong> 
+                            成功: ${successCount} | 失败: ${errorCount} | 总计: ${result.total}
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>邮箱</th>
+                                        <th>Auth Index</th>
+                                        <th>状态</th>
+                                        <th>使用量</th>
+                                        <th>详情</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+                    
+                    result.results.forEach(item => {
+                        const statusClass = item.status === 'success' ? 'success' : 'danger';
+                        const statusText = item.status === 'success' ? '正常' : '错误';
+                        
+                        let usageInfo = '-';
+                        let detailInfo = '-';
+                        
+                        if (item.status === 'success' && item.usage) {
+                            const usage = item.usage;
+                            
+                            // 显示使用量
+                            if (usage.usage_usd !== undefined) {
+                                usageInfo = `$${usage.usage_usd.toFixed(2)}`;
+                            }
+                            
+                            // 显示详细信息
+                            const details = [];
+                            if (usage.requests !== undefined) {
+                                details.push(`请求: ${usage.requests}`);
+                            }
+                            if (usage.tokens !== undefined) {
+                                details.push(`Token: ${usage.tokens}`);
+                            }
+                            if (usage.limit_usd !== undefined) {
+                                details.push(`限额: $${usage.limit_usd}`);
+                            }
+                            if (usage.remaining_usd !== undefined) {
+                                details.push(`剩余: $${usage.remaining_usd.toFixed(2)}`);
+                            }
+                            
+                            detailInfo = details.join(' | ');
+                        } else if (item.error) {
+                            detailInfo = `<span class="text-danger">${item.error}</span>`;
+                        }
+                        
+                        html += `
+                            <tr>
+                                <td>${item.email || '-'}</td>
+                                <td><small>${item.auth_index || '-'}</small></td>
+                                <td><span class="badge bg-${statusClass}">${statusText}</span></td>
+                                <td><strong>${usageInfo}</strong></td>
+                                <td><small>${detailInfo}</small></td>
+                            </tr>
+                        `;
+                    });
+                    
+                    html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                    
+                    resultsDiv.innerHTML = html;
+                    showToast(`检查完成！成功: ${successCount}, 失败: ${errorCount}`, 'success');
                 } else {
+                    resultsDiv.innerHTML = '<p class="text-danger">检查失败: ' + (result.error || '未知错误') + '</p>';
                     showToast('检查失败: ' + (result.error || '未知错误'), 'danger');
                 }
             } catch (error) {
+                resultsDiv.innerHTML = '<p class="text-danger">检查失败: ' + error.message + '</p>';
                 showToast('检查失败: ' + error.message, 'danger');
             }
         }
