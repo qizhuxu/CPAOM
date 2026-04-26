@@ -62,6 +62,10 @@ app.register_blueprint(stats.bp)
 app.register_blueprint(sync.bp)
 app.register_blueprint(tasks.bp)
 
+# 导入并注册本地账号蓝图
+from routes import local_accounts
+app.register_blueprint(local_accounts.bp)
+
 
 @app.route('/')
 @login_required

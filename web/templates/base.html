@@ -141,6 +141,9 @@
             <a class="nav-link" href="#" onclick="showAccountsPage(); return false;">
                 <i class="fas fa-users"></i> 账号管理
             </a>
+            <a class="nav-link" href="#" onclick="showLocalAccountsPage(); return false;">
+                <i class="fas fa-database"></i> 本地账号
+            </a>
             <a class="nav-link" href="#" onclick="showOperationsPage(); return false;">
                 <i class="fas fa-tasks"></i> 批量操作
             </a>
@@ -398,6 +401,142 @@
             
             loadServersList('syncServerSelect');
             loadSyncLogs();
+        }
+        
+        function showLocalAccountsPage() {
+            if (currentPage === 'local-accounts') return;
+            currentPage = 'local-accounts';
+            
+            const content = document.querySelector('.main-content');
+            content.innerHTML = `
+                <div class="container-fluid">
+                    <h1 class="mb-4"><i class="fas fa-database"></i> 本地账号数据</h1>
+                    
+                    <!-- 统计卡片 -->
+                    <div class="row mb-4" id="localStatsCards">
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="stat-label">总账号数</div>
+                                        <div class="stat-value text-primary" id="localTotalAccounts">-</div>
+                                    </div>
+                                    <div class="stat-icon text-primary">
+                                        <i class="fas fa-database"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="stat-label">活跃账号</div>
+                                        <div class="stat-value text-success" id="localActiveAccounts">-</div>
+                                    </div>
+                                    <div class="stat-icon text-success">
+                                        <i class="fas fa-check-circle"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="stat-label">已禁用</div>
+                                        <div class="stat-value text-danger" id="localDisabledAccounts">-</div>
+                                    </div>
+                                    <div class="stat-icon text-danger">
+                                        <i class="fas fa-ban"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="stat-label">服务器数</div>
+                                        <div class="stat-value text-info" id="localTotalServers">-</div>
+                                    </div>
+                                    <div class="stat-icon text-info">
+                                        <i class="fas fa-server"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 搜索和筛选 -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-search"></i> 搜索和筛选</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <select class="form-select" id="localServerFilter" onchange="loadLocalAccounts()">
+                                        <option value="">所有服务器</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <input type="text" class="form-control" id="localSearchKeyword" placeholder="搜索邮箱或文件名...">
+                                </div>
+                                <div class="col-md-2">
+                                    <button class="btn btn-primary w-100" onclick="searchLocalAccounts()">
+                                        <i class="fas fa-search"></i> 搜索
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 账号列表 -->
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">账号列表</h5>
+                            <button class="btn btn-sm btn-success" onclick="loadLocalAccounts()">
+                                <i class="fas fa-sync"></i> 刷新
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div id="localAccountsList">
+                                <div class="text-center py-4">
+                                    <div class="spinner-border text-primary" role="status"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 账号详情模态框 -->
+                <div class="modal fade" id="accountDetailModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">账号详情</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body" id="accountDetailContent">
+                                <div class="text-center py-4">
+                                    <div class="spinner-border text-primary" role="status"></div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            loadLocalStats();
+            loadLocalAccounts();
+            loadServersList('localServerFilter');
         }
         
         // 辅助函数
@@ -717,6 +856,198 @@
                 }
             } catch (error) {
                 console.error('加载同步日志失败:', error);
+            }
+        }
+        
+        // 本地账号相关函数
+        let accountDetailModal;
+        
+        async function loadLocalStats() {
+            try {
+                const result = await apiCall('GET', '/api/local-accounts/stats');
+                
+                if (result.success) {
+                    document.getElementById('localTotalAccounts').textContent = result.total_accounts;
+                    document.getElementById('localActiveAccounts').textContent = result.total_active;
+                    document.getElementById('localDisabledAccounts').textContent = result.total_disabled;
+                    document.getElementById('localTotalServers').textContent = result.total_servers;
+                }
+            } catch (error) {
+                console.error('加载本地统计失败:', error);
+            }
+        }
+        
+        async function loadLocalAccounts() {
+            const serverId = document.getElementById('localServerFilter')?.value;
+            const container = document.getElementById('localAccountsList');
+            
+            if (!container) return;
+            
+            container.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div></div>';
+            
+            try {
+                let url = '/api/local-accounts/';
+                if (serverId) {
+                    url = `/api/local-accounts/server/${serverId}`;
+                }
+                
+                const result = await apiCall('GET', url);
+                
+                if (result.accounts && result.accounts.length > 0) {
+                    let html = '<div class="table-responsive"><table class="table table-hover"><thead><tr><th>服务器</th><th>邮箱</th><th>文件名</th><th>状态</th><th>备份时间</th><th>操作</th></tr></thead><tbody>';
+                    
+                    result.accounts.forEach(account => {
+                        const statusClass = account.disabled ? 'danger' : 'success';
+                        const statusText = account.disabled ? '已禁用' : '活跃';
+                        const backupTime = new Date(account.backup_time).toLocaleString('zh-CN');
+                        
+                        html += `
+                            <tr>
+                                <td><span class="badge bg-secondary">${account.server_name}</span></td>
+                                <td>${account.email || '-'}</td>
+                                <td><small>${account.filename}</small></td>
+                                <td><span class="badge bg-${statusClass}">${statusText}</span></td>
+                                <td><small>${backupTime}</small></td>
+                                <td>
+                                    <button class="btn btn-sm btn-info" onclick="showAccountDetail(${account.id})">
+                                        <i class="fas fa-eye"></i> 详情
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteLocalAccount(${account.id})">
+                                        <i class="fas fa-trash"></i> 删除
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    
+                    html += '</tbody></table></div>';
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<p class="text-muted text-center">暂无本地账号数据</p>';
+                }
+            } catch (error) {
+                container.innerHTML = `<p class="text-danger text-center">加载失败: ${error.message}</p>`;
+            }
+        }
+        
+        async function searchLocalAccounts() {
+            const keyword = document.getElementById('localSearchKeyword').value;
+            const serverId = document.getElementById('localServerFilter').value;
+            const container = document.getElementById('localAccountsList');
+            
+            container.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div></div>';
+            
+            try {
+                const result = await apiCall('POST', '/api/local-accounts/search', {
+                    keyword: keyword,
+                    server_id: serverId || null
+                });
+                
+                if (result.accounts && result.accounts.length > 0) {
+                    let html = '<div class="table-responsive"><table class="table table-hover"><thead><tr><th>服务器</th><th>邮箱</th><th>文件名</th><th>状态</th><th>备份时间</th><th>操作</th></tr></thead><tbody>';
+                    
+                    result.accounts.forEach(account => {
+                        const statusClass = account.disabled ? 'danger' : 'success';
+                        const statusText = account.disabled ? '已禁用' : '活跃';
+                        const backupTime = new Date(account.backup_time).toLocaleString('zh-CN');
+                        
+                        html += `
+                            <tr>
+                                <td><span class="badge bg-secondary">${account.server_name}</span></td>
+                                <td>${account.email || '-'}</td>
+                                <td><small>${account.filename}</small></td>
+                                <td><span class="badge bg-${statusClass}">${statusText}</span></td>
+                                <td><small>${backupTime}</small></td>
+                                <td>
+                                    <button class="btn btn-sm btn-info" onclick="showAccountDetail(${account.id})">
+                                        <i class="fas fa-eye"></i> 详情
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteLocalAccount(${account.id})">
+                                        <i class="fas fa-trash"></i> 删除
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    
+                    html += '</tbody></table></div>';
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<p class="text-muted text-center">未找到匹配的账号</p>';
+                }
+            } catch (error) {
+                container.innerHTML = `<p class="text-danger text-center">搜索失败: ${error.message}</p>`;
+            }
+        }
+        
+        async function showAccountDetail(accountId) {
+            if (!accountDetailModal) {
+                accountDetailModal = new bootstrap.Modal(document.getElementById('accountDetailModal'));
+            }
+            
+            const content = document.getElementById('accountDetailContent');
+            content.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div></div>';
+            
+            accountDetailModal.show();
+            
+            try {
+                const result = await apiCall('GET', `/api/local-accounts/${accountId}`);
+                
+                if (result.success && result.account) {
+                    const account = result.account;
+                    const authData = account.auth_data_parsed;
+                    
+                    let html = `
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>服务器:</strong> ${account.server_name}</p>
+                                <p><strong>邮箱:</strong> ${account.email || '-'}</p>
+                                <p><strong>文件名:</strong> ${account.filename}</p>
+                                <p><strong>状态:</strong> <span class="badge bg-${account.disabled ? 'danger' : 'success'}">${account.disabled ? '已禁用' : '活跃'}</span></p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>备份时间:</strong> ${new Date(account.backup_time).toLocaleString('zh-CN')}</p>
+                                <p><strong>创建时间:</strong> ${new Date(account.created_at).toLocaleString('zh-CN')}</p>
+                                <p><strong>更新时间:</strong> ${new Date(account.updated_at).toLocaleString('zh-CN')}</p>
+                            </div>
+                        </div>
+                        <hr>
+                        <h6>认证数据:</h6>
+                    `;
+                    
+                    if (authData) {
+                        html += '<pre class="bg-light p-3" style="max-height: 400px; overflow-y: auto;">' + 
+                                JSON.stringify(authData, null, 2) + '</pre>';
+                    } else {
+                        html += '<p class="text-muted">无法解析认证数据</p>';
+                    }
+                    
+                    content.innerHTML = html;
+                } else {
+                    content.innerHTML = '<p class="text-danger">加载失败</p>';
+                }
+            } catch (error) {
+                content.innerHTML = `<p class="text-danger">加载失败: ${error.message}</p>`;
+            }
+        }
+        
+        async function deleteLocalAccount(accountId) {
+            if (!confirm('确定要删除此本地账号数据吗？此操作不可恢复！')) {
+                return;
+            }
+            
+            try {
+                const result = await apiCall('DELETE', `/api/local-accounts/${accountId}`);
+                
+                if (result.success) {
+                    showToast('账号已删除', 'success');
+                    loadLocalStats();
+                    loadLocalAccounts();
+                } else {
+                    showToast('删除失败: ' + (result.message || '未知错误'), 'danger');
+                }
+            } catch (error) {
+                showToast('删除失败: ' + error.message, 'danger');
             }
         }
     </script>
