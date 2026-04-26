@@ -135,20 +135,25 @@
             <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}">
                 <i class="fas fa-home"></i> 仪表板
             </a>
-            <a class="nav-link" href="#" onclick="showPage('servers')">
+            <a class="nav-link disabled" href="#" title="功能通过 API 提供">
                 <i class="fas fa-server"></i> 服务器管理
+                <small class="text-muted d-block" style="font-size: 0.7rem;">（在仪表板中管理）</small>
             </a>
-            <a class="nav-link" href="#" onclick="showPage('accounts')">
+            <a class="nav-link disabled" href="#" title="功能通过 API 提供">
                 <i class="fas fa-users"></i> 账号管理
+                <small class="text-muted d-block" style="font-size: 0.7rem;">（API 可用）</small>
             </a>
-            <a class="nav-link" href="#" onclick="showPage('operations')">
+            <a class="nav-link disabled" href="#" title="功能通过 API 提供">
                 <i class="fas fa-tasks"></i> 批量操作
+                <small class="text-muted d-block" style="font-size: 0.7rem;">（API 可用）</small>
             </a>
-            <a class="nav-link" href="#" onclick="showPage('sync')">
+            <a class="nav-link disabled" href="#" title="功能通过 API 提供">
                 <i class="fas fa-sync"></i> 同步备份
+                <small class="text-muted d-block" style="font-size: 0.7rem;">（API 可用）</small>
             </a>
-            <a class="nav-link" href="#" onclick="showPage('logs')">
+            <a class="nav-link disabled" href="#" title="功能通过 API 提供">
                 <i class="fas fa-list"></i> 操作日志
+                <small class="text-muted d-block" style="font-size: 0.7rem;">（API 可用）</small>
             </a>
             
             <hr style="border-color: rgba(255,255,255,0.1); margin: 20px;">
@@ -235,11 +240,24 @@
             }, 5000);
         }
         
-        // 页面导航（SPA 风格）
+        // 页面导航
         function showPage(page) {
-            // 简单实现：刷新页面并添加 hash
-            window.location.hash = page;
-            window.location.reload();
+            // 这些功能目前通过 API 提供，暂未实现前端页面
+            const pageNames = {
+                'servers': '服务器管理',
+                'accounts': '账号管理',
+                'operations': '批量操作',
+                'sync': '同步备份',
+                'logs': '操作日志'
+            };
+            
+            showToast(`${pageNames[page] || page} 功能正在开发中，请使用 API 接口`, 'info');
+            
+            // TODO: 实现完整的前端页面
+            // 目前可以通过以下方式使用：
+            // - 直接调用 API 接口
+            // - 使用 Postman 等工具测试
+            // - 或者在仪表板添加更多功能
         }
     </script>
     
