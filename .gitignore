@@ -19,7 +19,6 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-.kiro
 MANIFEST
 .venv/
 venv/
@@ -81,3 +80,7 @@ Thumbs.db
 
 # Kiro (keep steering rules but ignore other Kiro files)
 .kiro/settings/
+.kiro/
+
+shell/pool/
+
