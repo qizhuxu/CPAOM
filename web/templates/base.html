@@ -135,9 +135,6 @@
             <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}">
                 <i class="fas fa-home"></i> 仪表板
             </a>
-            <a class="nav-link" href="#" onclick="showServersPage(); return false;">
-                <i class="fas fa-server"></i> 服务器管理
-            </a>
             <a class="nav-link" href="#" onclick="showAccountsPage(); return false;">
                 <i class="fas fa-users"></i> 账号管理
             </a>
@@ -642,8 +639,6 @@
             try {
                 const result = await apiCall('POST', `/api/accounts/${serverId}/check-usage`);
                 
-                console.log('使用情况检查结果:', result); // 调试输出
-                
                 if (result.success && result.results) {
                     // 统计数据
                     const successCount = result.results.filter(r => r.status === 'success').length;
@@ -669,8 +664,6 @@
                     `;
                     
                     result.results.forEach(item => {
-                        console.log('处理项目:', item); // 调试输出
-                        
                         const statusClass = item.status === 'success' ? 'success' : 'danger';
                         const statusText = item.status === 'success' ? '正常' : '错误';
                         
@@ -679,30 +672,26 @@
                         
                         if (item.status === 'success' && item.usage) {
                             const usage = item.usage;
-                            console.log('使用量数据:', usage); // 调试输出
                             
-                            // 尝试不同的字段名
-                            if (usage.usage_usd !== undefined) {
-                                usageInfo = `$${usage.usage_usd.toFixed(2)}`;
-                            } else if (usage.total_usage !== undefined) {
-                                usageInfo = `$${usage.total_usage.toFixed(2)}`;
-                            } else if (usage.total_granted !== undefined) {
-                                usageInfo = `$${usage.total_granted.toFixed(2)}`;
+                            // 使用正确的数据结构：rate_limit.primary_window.used_percent
+                            const rateLimit = usage.rate_limit || {};
+                            const primaryWindow = rateLimit.primary_window || {};
+                            const usedPercent = primaryWindow.used_percent || 0;
+                            const limitReached = rateLimit.limit_reached || false;
+                            
+                            // 显示使用百分比
+                            usageInfo = `${usedPercent.toFixed(1)}%`;
+                            
+                            // 根据使用情况显示状态图标
+                            let statusIcon = '🟢';
+                            if (limitReached) {
+                                statusIcon = '🔴';
+                            } else if (usedPercent >= 50) {
+                                statusIcon = '🟡';
                             }
                             
                             // 显示详细信息
-                            const details = [];
-                            
-                            // 尝试各种可能的字段
-                            Object.keys(usage).forEach(key => {
-                                if (typeof usage[key] === 'number') {
-                                    details.push(`${key}: ${usage[key]}`);
-                                } else if (typeof usage[key] === 'string') {
-                                    details.push(`${key}: ${usage[key]}`);
-                                }
-                            });
-                            
-                            detailInfo = details.join(' | ') || JSON.stringify(usage);
+                            detailInfo = `${statusIcon} 使用率: ${usedPercent.toFixed(1)}% | 限额: ${limitReached ? '已达' : '未达'}`;
                         } else if (item.error) {
                             detailInfo = `<span class="text-danger">${item.error}</span>`;
                         }
