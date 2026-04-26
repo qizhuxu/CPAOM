@@ -135,25 +135,17 @@
             <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}">
                 <i class="fas fa-home"></i> 仪表板
             </a>
-            <a class="nav-link disabled" href="#" title="功能通过 API 提供">
+            <a class="nav-link" href="#" onclick="showServersPage(); return false;">
                 <i class="fas fa-server"></i> 服务器管理
-                <small class="text-muted d-block" style="font-size: 0.7rem;">（在仪表板中管理）</small>
             </a>
-            <a class="nav-link disabled" href="#" title="功能通过 API 提供">
+            <a class="nav-link" href="#" onclick="showAccountsPage(); return false;">
                 <i class="fas fa-users"></i> 账号管理
-                <small class="text-muted d-block" style="font-size: 0.7rem;">（API 可用）</small>
             </a>
-            <a class="nav-link disabled" href="#" title="功能通过 API 提供">
+            <a class="nav-link" href="#" onclick="showOperationsPage(); return false;">
                 <i class="fas fa-tasks"></i> 批量操作
-                <small class="text-muted d-block" style="font-size: 0.7rem;">（API 可用）</small>
             </a>
-            <a class="nav-link disabled" href="#" title="功能通过 API 提供">
+            <a class="nav-link" href="#" onclick="showSyncPage(); return false;">
                 <i class="fas fa-sync"></i> 同步备份
-                <small class="text-muted d-block" style="font-size: 0.7rem;">（API 可用）</small>
-            </a>
-            <a class="nav-link disabled" href="#" title="功能通过 API 提供">
-                <i class="fas fa-list"></i> 操作日志
-                <small class="text-muted d-block" style="font-size: 0.7rem;">（API 可用）</small>
             </a>
             
             <hr style="border-color: rgba(255,255,255,0.1); margin: 20px;">
@@ -240,24 +232,370 @@
             }, 5000);
         }
         
-        // 页面导航
-        function showPage(page) {
-            // 这些功能目前通过 API 提供，暂未实现前端页面
-            const pageNames = {
-                'servers': '服务器管理',
-                'accounts': '账号管理',
-                'operations': '批量操作',
-                'sync': '同步备份',
-                'logs': '操作日志'
-            };
+        // 页面导航函数
+        let currentPage = 'dashboard';
+        
+        function showServersPage() {
+            // 服务器管理在仪表板中已实现
+            window.location.href = '/';
+        }
+        
+        function showAccountsPage() {
+            if (currentPage === 'accounts') return;
+            currentPage = 'accounts';
             
-            showToast(`${pageNames[page] || page} 功能正在开发中，请使用 API 接口`, 'info');
+            const content = document.querySelector('.main-content');
+            content.innerHTML = `
+                <div class="container-fluid">
+                    <h1 class="mb-4"><i class="fas fa-users"></i> 账号管理</h1>
+                    
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">选择服务器</h5>
+                        </div>
+                        <div class="card-body">
+                            <select class="form-select" id="accountsServerSelect" onchange="loadAccounts()">
+                                <option value="">请选择服务器...</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="card" id="accountsCard" style="display: none;">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">账号列表</h5>
+                            <button class="btn btn-primary btn-sm" onclick="checkUsage()">
+                                <i class="fas fa-sync"></i> 检查使用情况
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div id="accountsList">
+                                <div class="text-center py-4">
+                                    <div class="spinner-border text-primary" role="status"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
             
-            // TODO: 实现完整的前端页面
-            // 目前可以通过以下方式使用：
-            // - 直接调用 API 接口
-            // - 使用 Postman 等工具测试
-            // - 或者在仪表板添加更多功能
+            loadServersList('accountsServerSelect');
+        }
+        
+        function showOperationsPage() {
+            if (currentPage === 'operations') return;
+            currentPage = 'operations';
+            
+            const content = document.querySelector('.main-content');
+            content.innerHTML = `
+                <div class="container-fluid">
+                    <h1 class="mb-4"><i class="fas fa-tasks"></i> 批量操作</h1>
+                    
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">选择服务器</h5>
+                        </div>
+                        <div class="card-body">
+                            <select class="form-select" id="operationsServerSelect">
+                                <option value="">请选择服务器...</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0"><i class="fas fa-download"></i> 批量下载</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p>下载所有活跃账号的认证文件并打包为 ZIP</p>
+                                    <button class="btn btn-primary" onclick="downloadAccounts()">
+                                        <i class="fas fa-download"></i> 开始下载
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0"><i class="fas fa-upload"></i> 批量上传</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p>上传 ZIP 文件或选择目录批量上传认证文件</p>
+                                    <input type="file" class="form-control mb-2" id="uploadFile" accept=".zip">
+                                    <button class="btn btn-success" onclick="uploadAccounts()">
+                                        <i class="fas fa-upload"></i> 开始上传
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-heartbeat"></i> Token 复活</h5>
+                        </div>
+                        <div class="card-body">
+                            <p>批量刷新过期的 OAuth Token</p>
+                            <button class="btn btn-warning" onclick="reviveTokens()">
+                                <i class="fas fa-sync-alt"></i> 批量复活 Token
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            loadServersList('operationsServerSelect');
+        }
+        
+        function showSyncPage() {
+            if (currentPage === 'sync') return;
+            currentPage = 'sync';
+            
+            const content = document.querySelector('.main-content');
+            content.innerHTML = `
+                <div class="container-fluid">
+                    <h1 class="mb-4"><i class="fas fa-sync"></i> 同步备份</h1>
+                    
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">选择服务器</h5>
+                        </div>
+                        <div class="card-body">
+                            <select class="form-select" id="syncServerSelect">
+                                <option value="">请选择服务器...</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-database"></i> 同步认证文件到数据库</h5>
+                        </div>
+                        <div class="card-body">
+                            <p>将服务器上的认证文件同步备份到本地数据库</p>
+                            <button class="btn btn-primary" onclick="syncAuthFiles()">
+                                <i class="fas fa-sync"></i> 开始同步
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-history"></i> 同步日志</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="syncLogs">
+                                <div class="text-center py-4">
+                                    <p class="text-muted">暂无同步日志</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            loadServersList('syncServerSelect');
+            loadSyncLogs();
+        }
+        
+        // 辅助函数
+        async function loadServersList(selectId) {
+            try {
+                const result = await apiCall('GET', '/api/servers/');
+                const select = document.getElementById(selectId);
+                
+                if (result.servers && result.servers.length > 0) {
+                    result.servers.forEach(server => {
+                        const option = document.createElement('option');
+                        option.value = server.id;
+                        option.textContent = server.name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('加载服务器列表失败:', error);
+            }
+        }
+        
+        async function loadAccounts() {
+            const serverId = document.getElementById('accountsServerSelect').value;
+            if (!serverId) return;
+            
+            document.getElementById('accountsCard').style.display = 'block';
+            document.getElementById('accountsList').innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div></div>';
+            
+            try {
+                const result = await apiCall('GET', `/api/accounts/${serverId}`);
+                
+                if (result.files && result.files.length > 0) {
+                    let html = '<div class="table-responsive"><table class="table table-hover"><thead><tr><th>文件名</th><th>状态</th><th>操作</th></tr></thead><tbody>';
+                    
+                    result.files.forEach(file => {
+                        const statusClass = file.disabled ? 'danger' : 'success';
+                        const statusText = file.disabled ? '已禁用' : '活跃';
+                        
+                        html += `
+                            <tr>
+                                <td>${file.filename}</td>
+                                <td><span class="badge bg-${statusClass}">${statusText}</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary" onclick="reviveSingleToken('${serverId}', '${file.filename}')">
+                                        <i class="fas fa-sync"></i> 复活
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    
+                    html += '</tbody></table></div>';
+                    document.getElementById('accountsList').innerHTML = html;
+                } else {
+                    document.getElementById('accountsList').innerHTML = '<p class="text-muted text-center">暂无账号</p>';
+                }
+            } catch (error) {
+                document.getElementById('accountsList').innerHTML = `<p class="text-danger text-center">加载失败: ${error.message}</p>`;
+            }
+        }
+        
+        async function checkUsage() {
+            const serverId = document.getElementById('accountsServerSelect').value;
+            if (!serverId) {
+                showToast('请先选择服务器', 'warning');
+                return;
+            }
+            
+            showToast('正在检查使用情况...', 'info');
+            
+            try {
+                const result = await apiCall('POST', `/api/accounts/${serverId}/check-usage`);
+                showToast(`检查完成！成功: ${result.success_count}, 失败: ${result.error_count}`, 'success');
+                loadAccounts();
+            } catch (error) {
+                showToast('检查失败: ' + error.message, 'danger');
+            }
+        }
+        
+        async function downloadAccounts() {
+            const serverId = document.getElementById('operationsServerSelect').value;
+            if (!serverId) {
+                showToast('请先选择服务器', 'warning');
+                return;
+            }
+            
+            showToast('正在下载...', 'info');
+            
+            try {
+                const result = await apiCall('POST', `/api/operations/${serverId}/download`);
+                showToast(`下载完成！文件: ${result.filename}`, 'success');
+            } catch (error) {
+                showToast('下载失败: ' + error.message, 'danger');
+            }
+        }
+        
+        async function uploadAccounts() {
+            const serverId = document.getElementById('operationsServerSelect').value;
+            const fileInput = document.getElementById('uploadFile');
+            
+            if (!serverId) {
+                showToast('请先选择服务器', 'warning');
+                return;
+            }
+            
+            if (!fileInput.files[0]) {
+                showToast('请选择文件', 'warning');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            
+            showToast('正在上传...', 'info');
+            
+            try {
+                const result = await apiCall('POST', `/api/operations/${serverId}/upload`, formData);
+                showToast(`上传完成！成功: ${result.success_count}, 失败: ${result.error_count}`, 'success');
+            } catch (error) {
+                showToast('上传失败: ' + error.message, 'danger');
+            }
+        }
+        
+        async function reviveTokens() {
+            const serverId = document.getElementById('operationsServerSelect').value;
+            if (!serverId) {
+                showToast('请先选择服务器', 'warning');
+                return;
+            }
+            
+            showToast('正在复活 Token...', 'info');
+            
+            try {
+                const result = await apiCall('POST', `/api/operations/${serverId}/batch-revive`);
+                showToast(`复活完成！成功: ${result.success_count}, 失败: ${result.error_count}`, 'success');
+            } catch (error) {
+                showToast('复活失败: ' + error.message, 'danger');
+            }
+        }
+        
+        async function reviveSingleToken(serverId, filename) {
+            showToast('正在复活 Token...', 'info');
+            
+            try {
+                const result = await apiCall('POST', `/api/accounts/${serverId}/${filename}/revive`);
+                showToast('Token 复活成功', 'success');
+                loadAccounts();
+            } catch (error) {
+                showToast('复活失败: ' + error.message, 'danger');
+            }
+        }
+        
+        async function syncAuthFiles() {
+            const serverId = document.getElementById('syncServerSelect').value;
+            if (!serverId) {
+                showToast('请先选择服务器', 'warning');
+                return;
+            }
+            
+            showToast('正在同步...', 'info');
+            
+            try {
+                const result = await apiCall('POST', `/api/sync/${serverId}/auth-files`);
+                showToast(`同步完成！同步了 ${result.synced_count} 个文件`, 'success');
+                loadSyncLogs();
+            } catch (error) {
+                showToast('同步失败: ' + error.message, 'danger');
+            }
+        }
+        
+        async function loadSyncLogs() {
+            try {
+                const result = await apiCall('GET', '/api/sync/logs?limit=10');
+                const container = document.getElementById('syncLogs');
+                
+                if (result.logs && result.logs.length > 0) {
+                    let html = '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>时间</th><th>服务器</th><th>操作</th><th>状态</th></tr></thead><tbody>';
+                    
+                    result.logs.forEach(log => {
+                        const statusClass = log.status === 'success' ? 'success' : 'danger';
+                        html += `
+                            <tr>
+                                <td><small>${log.created_at}</small></td>
+                                <td>${log.server_id}</td>
+                                <td>${log.operation}</td>
+                                <td><span class="badge bg-${statusClass}">${log.status}</span></td>
+                            </tr>
+                        `;
+                    });
+                    
+                    html += '</tbody></table></div>';
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<p class="text-muted text-center">暂无同步日志</p>';
+                }
+            } catch (error) {
+                console.error('加载同步日志失败:', error);
+            }
         }
     </script>
     

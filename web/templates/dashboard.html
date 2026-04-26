@@ -98,39 +98,20 @@
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0">
-                        <i class="fas fa-bolt"></i> 可用功能
+                        <i class="fas fa-bolt"></i> 快速操作
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div class="list-group">
-                        <div class="list-group-item">
-                            <div class="d-flex w-100 justify-content-between">
-                                <h6 class="mb-1"><i class="fas fa-server"></i> 服务器管理</h6>
-                                <span class="badge bg-success">已实现</span>
-                            </div>
-                            <p class="mb-1 small text-muted">在上方服务器列表中添加、测试、删除服务器</p>
-                        </div>
-                        <div class="list-group-item">
-                            <div class="d-flex w-100 justify-content-between">
-                                <h6 class="mb-1"><i class="fas fa-users"></i> 账号管理</h6>
-                                <span class="badge bg-warning">API 可用</span>
-                            </div>
-                            <p class="mb-1 small text-muted">GET /api/accounts/&lt;server_id&gt;</p>
-                        </div>
-                        <div class="list-group-item">
-                            <div class="d-flex w-100 justify-content-between">
-                                <h6 class="mb-1"><i class="fas fa-tasks"></i> 批量操作</h6>
-                                <span class="badge bg-warning">API 可用</span>
-                            </div>
-                            <p class="mb-1 small text-muted">POST /api/operations/&lt;server_id&gt;/download</p>
-                        </div>
-                        <div class="list-group-item">
-                            <div class="d-flex w-100 justify-content-between">
-                                <h6 class="mb-1"><i class="fas fa-sync"></i> 同步备份</h6>
-                                <span class="badge bg-warning">API 可用</span>
-                            </div>
-                            <p class="mb-1 small text-muted">POST /api/sync/&lt;server_id&gt;/auth-files</p>
-                        </div>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary" onclick="showAccountsPage()">
+                            <i class="fas fa-search"></i> 检查账号使用情况
+                        </button>
+                        <button class="btn btn-outline-success" onclick="showOperationsPage()">
+                            <i class="fas fa-download"></i> 批量下载账号
+                        </button>
+                        <button class="btn btn-outline-info" onclick="showSyncPage()">
+                            <i class="fas fa-sync"></i> 同步备份数据
+                        </button>
                     </div>
                 </div>
             </div>
