@@ -140,4 +140,9 @@ if __name__ == '__main__':
 ╚══════════════════════════════════════════════════════════════╝
     """)
     
+    # 添加一些启动日志用于测试
+    app.logger.info('Flask 应用启动中...')
+    app.logger.info(f'监听地址: {host}:{port}')
+    app.logger.info(f'调试模式: {"开启" if debug else "关闭"}')
+    
     app.run(host=host, port=port, debug=debug)

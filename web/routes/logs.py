@@ -77,30 +77,51 @@ def stream_logs():
         try:
             # 首先发送缓冲区中的历史日志
             with log_lock:
-                for log_entry in log_buffer:
+                for log_entry in list(log_buffer):
                     yield f"data: {format_log_entry(log_entry)}\n\n"
             
-            # 然后持续发送新日志
-            while True:
+            # 发送连接成功消息
+            yield f": connected\n\n"
+            
+            # 持续发送新日志，但限制时间避免无限阻塞
+            max_iterations = 3600  # 最多运行1小时（每秒一次心跳）
+            iterations = 0
+            
+            while iterations < max_iterations:
                 try:
-                    log_entry = q.get(timeout=30)  # 30秒超时，用于保持连接
+                    # 使用较短的超时，更快响应断开
+                    log_entry = q.get(timeout=5)
                     yield f"data: {format_log_entry(log_entry)}\n\n"
                 except queue.Empty:
                     # 发送心跳保持连接
                     yield f": heartbeat\n\n"
+                    iterations += 1
+                except:
+                    # 任何异常都退出
+                    break
+                    
         except GeneratorExit:
+            # 客户端断开连接
             pass
+        except Exception as e:
+            # 记录错误但不崩溃
+            import logging
+            logging.getLogger(__name__).error(f"日志流错误: {e}")
         finally:
+            # 确保取消订阅
             log_handler.unsubscribe(q)
     
-    return Response(
+    response = Response(
         stream_with_context(generate()),
         mimetype='text/event-stream',
         headers={
             'Cache-Control': 'no-cache',
-            'X-Accel-Buffering': 'no'
+            'X-Accel-Buffering': 'no',
+            'Connection': 'keep-alive'
         }
     )
+    
+    return response
 
 
 @bp.route('/history')
@@ -149,28 +170,44 @@ def format_log_entry(log_entry):
 def setup_logging(app):
     """设置日志系统"""
     import logging
+    import sys
     
-    # 创建自定义处理器
-    class FlaskLogHandler(logging.Handler):
+    # 创建自定义处理器用于 Web 日志流
+    class WebLogHandler(logging.Handler):
         def emit(self, record):
             log_handler.emit(record)
     
-    # 添加处理器到 Flask 应用日志
-    flask_handler = FlaskLogHandler()
-    flask_handler.setLevel(logging.INFO)
+    # 创建 Web 日志处理器
+    web_handler = WebLogHandler()
+    web_handler.setLevel(logging.INFO)
     
-    # 设置格式
+    # 创建控制台处理器（保留原有的终端输出）
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.INFO)
+    
+    # 设置日志格式
     formatter = logging.Formatter(
         '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
-    flask_handler.setFormatter(formatter)
+    web_handler.setFormatter(formatter)
+    console_handler.setFormatter(formatter)
     
-    # 添加到 Flask 日志
-    app.logger.addHandler(flask_handler)
+    # 清除现有的处理器（避免重复）
+    app.logger.handlers.clear()
+    logging.getLogger().handlers.clear()
+    
+    # 添加处理器到 Flask 应用日志
+    app.logger.addHandler(web_handler)
+    app.logger.addHandler(console_handler)
     app.logger.setLevel(logging.INFO)
     
-    # 同时添加到根日志记录器，捕获所有日志
-    logging.getLogger().addHandler(flask_handler)
-    logging.getLogger().setLevel(logging.INFO)
+    # 添加到根日志记录器，捕获所有模块的日志
+    root_logger = logging.getLogger()
+    root_logger.addHandler(web_handler)
+    root_logger.addHandler(console_handler)
+    root_logger.setLevel(logging.INFO)
     
-    app.logger.info('日志系统已初始化')
+    # 防止日志重复（禁用传播到父记录器）
+    app.logger.propagate = False
+    
+    app.logger.info('日志系统已初始化 - 支持控制台和 Web 界面双输出')

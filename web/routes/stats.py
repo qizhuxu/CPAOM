@@ -2,8 +2,9 @@
 统计信息路由
 """
 
+import logging
 from flask import Blueprint, jsonify
-from flask_login import login_required
+from flask_login import login_required, current_user
 from utils.config_manager import ConfigManager
 from utils.cpa_client import CPAClient
 from utils.db_service import DatabaseService
@@ -12,12 +13,15 @@ import os
 bp = Blueprint('stats', __name__, url_prefix='/api/stats')
 config_manager = ConfigManager()
 db_service = DatabaseService(os.getenv('DATABASE_PATH', 'data/cpa_manager.db'))
+logger = logging.getLogger(__name__)
 
 
 @bp.route('/dashboard', methods=['GET'])
 @login_required
 def dashboard_stats():
     """仪表板统计"""
+    logger.debug(f"用户 {current_user.username} 请求仪表板统计")
+    
     try:
         servers = config_manager.get_servers()
         
@@ -40,8 +44,11 @@ def dashboard_stats():
                 total_accounts += len(files)
                 active_accounts += sum(1 for f in files if not f.get("disabled"))
                 disabled_accounts += sum(1 for f in files if f.get("disabled"))
-            except:
+            except Exception as e:
+                logger.warning(f"获取服务器 {server['name']} 统计失败: {e}")
                 continue
+        
+        logger.info(f"仪表板统计: {total_servers} 个服务器, {total_accounts} 个账号")
         
         # 获取同步日志统计
         sync_logs = db_service.get_sync_logs(limit=10)

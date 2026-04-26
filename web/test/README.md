@@ -4,6 +4,26 @@ Web 版 CPA 管理系统的测试脚本集合。
 
 ## 测试脚本列表
 
+### quick_test.py ⭐ 推荐
+
+快速验证日志系统是否正常工作的脚本。
+
+**功能:**
+- 验证应用模块导入
+- 测试日志系统初始化
+- 发送测试日志消息
+
+**使用方法:**
+
+```bash
+cd test
+python quick_test.py
+```
+
+**预期结果:**
+- 终端显示测试日志消息
+- 无错误信息
+
 ### test_logs.py
 
 测试日志功能的脚本，用于验证日志流是否正常工作。
@@ -27,10 +47,64 @@ cd test
 python test_logs.py
 ```
 
+### test_log_output.py
+
+测试日志双输出功能的脚本，验证日志既能在终端显示，又能推送到 Web 界面。
+
+**功能:**
+- 验证控制台日志输出
+- 测试 Web 日志接口
+- 模拟用户操作产生日志
+- 监控实时日志流
+
+**使用方法:**
+
+```bash
+# 1. 启动 Web 应用
+cd ..
+python app.py
+
+# 2. 在另一个终端运行测试
+cd test
+python test_log_output.py
+```
+
 **预期结果:**
-- 在 Web 界面的"系统日志"页面能看到实时日志输出
-- 不同级别的日志显示不同颜色
-- 日志内容包含时间戳、级别、模块名和消息
+- 终端中能看到所有测试日志
+- Web 界面的"系统日志"页面显示相同日志
+- 日志实时更新（无需刷新页面）
+
+### generate_test_logs.py
+
+生成各种测试日志的脚本，用于验证日志流的实时显示效果。
+
+**功能:**
+- 通过应用模块生成日志
+- 通过 Python logging 生成日志
+- 模拟用户操作产生 HTTP 请求日志
+- 生成不同级别和类型的日志
+
+**使用方法:**
+
+```bash
+# 1. 启动 Web 应用
+cd ..
+python app.py
+# 或使用启动脚本
+start_with_logs.bat  # Windows
+./start_with_logs.sh # Linux/macOS
+
+# 2. 在另一个终端生成测试日志
+cd test
+..\\.venv\\Scripts\\activate  # Windows
+# 或 source ../.venv/bin/activate  # Linux/macOS
+python generate_test_logs.py
+```
+
+**预期结果:**
+- 终端显示各种测试日志
+- Web 界面实时显示相同日志
+- 不同级别显示不同颜色
 
 ## 运行所有测试
 

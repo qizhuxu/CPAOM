@@ -18,7 +18,9 @@ logger = logging.getLogger(__name__)
 @login_required
 def list_servers():
     """获取服务器列表"""
+    logger.debug(f"用户 {current_user.username} 请求服务器列表")
     servers = config_manager.get_servers()
+    logger.info(f"返回 {len(servers)} 个服务器配置")
     return jsonify({"servers": servers})
 
 
@@ -58,6 +60,7 @@ def add_server():
             "file_count": len(files)
         })
     except Exception as e:
+        logger.error(f"添加服务器失败: {server.get('name', 'Unknown')} - {str(e)}")
         return jsonify({
             "success": False,
             "message": f"连接失败: {str(e)}"
@@ -70,13 +73,17 @@ def update_server(server_id):
     """更新服务器"""
     data = request.get_json()
     
+    logger.info(f"用户 {current_user.username} 更新服务器: {server_id}")
+    
     try:
         config_manager.update_server(server_id, data)
+        logger.info(f"服务器更新成功: {server_id}")
         return jsonify({
             "success": True,
             "message": "服务器更新成功"
         })
     except Exception as e:
+        logger.error(f"更新服务器失败: {server_id} - {str(e)}")
         return jsonify({
             "success": False,
             "message": str(e)
@@ -87,13 +94,17 @@ def update_server(server_id):
 @login_required
 def delete_server(server_id):
     """删除服务器"""
+    logger.info(f"用户 {current_user.username} 删除服务器: {server_id}")
+    
     try:
         config_manager.delete_server(server_id)
+        logger.info(f"服务器删除成功: {server_id}")
         return jsonify({
             "success": True,
             "message": "服务器删除成功"
         })
     except Exception as e:
+        logger.error(f"删除服务器失败: {server_id} - {str(e)}")
         return jsonify({
             "success": False,
             "message": str(e)
