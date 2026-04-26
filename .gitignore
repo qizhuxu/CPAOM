@@ -53,13 +53,15 @@ pool/*.json
 temp/
 tmp/
 
+# Shell pool directory (downloaded account backups)
+shell/pool/
+
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
-.DS_Store
 
 # Cloudflare
 .wrangler/
@@ -78,9 +80,12 @@ yarn.lock
 Thumbs.db
 .DS_Store
 
-# Kiro (keep steering rules but ignore other Kiro files)
+# Kiro AI assistant files (except steering rules)
 .kiro/settings/
-.kiro/
-
-shell/pool/
+.kiro/skills/
+.kiro/*.json
+.kiro/*.log
+.kiro/cache/
+# Keep steering rules
+!.kiro/steering/
 
