@@ -451,5 +451,4 @@ return jsonResponse({
 ## 下一步
 
 - 查看 [API 参考](api.md) 了解所有端点
-- 查看 [架构设计](architecture.md) 了解系统设计
-- 查看 [部署指南](deployment.md) 了解生产部署
+- 阅读 [快速开始](quickstart.md) 了解部署流程

@@ -470,5 +470,4 @@ const { summary, results } = await checkRes.json();
 ## 相关文档
 
 - [快速开始](quickstart.md) - 部署和首次使用
-- [架构设计](architecture.md) - API 实现细节
 - [开发指南](development.md) - 本地开发和测试

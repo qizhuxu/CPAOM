@@ -36,40 +36,26 @@ docker-compose up -d
 docker-compose up -d --build
 ```
 
-## 方式 2：Windows 本地部署
+## 方式 2：本地部署
 
-1. 确保已安装 Python 3.8+
+### Windows
 
-2. 运行安装脚本：
 ```bash
 cd CPAOM\web
-setup.bat
+manage.bat setup
+manage.bat start
 ```
 
-3. 启动服务：
-```bash
-run.bat
-```
+### Linux/macOS
 
-4. 访问 http://localhost:5000
-
-## 方式 3：Linux/macOS 本地部署
-
-1. 确保已安装 Python 3.8+
-
-2. 运行安装脚本：
 ```bash
 cd CPAOM/web
-chmod +x setup.sh run.sh
-./setup.sh
+chmod +x manage.sh
+./manage.sh setup
+./manage.sh start
 ```
 
-3. 启动服务：
-```bash
-./run.sh
-```
-
-4. 访问 http://localhost:5000
+访问 http://localhost:5000
 
 ## 首次配置
 
@@ -101,6 +87,5 @@ A: `data/cpa_manager.db` 文件中
 
 ## 下一步
 
-- 查看 [README.md](README.md) 了解完整功能
 - 配置定时任务实现自动维护
 - 设置 HTTPS 提高安全性

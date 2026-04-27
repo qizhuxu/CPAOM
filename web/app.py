@@ -70,6 +70,18 @@ app.register_blueprint(local_accounts.bp)
 from routes import logs
 app.register_blueprint(logs.bp)
 
+# 导入并注册同步配置蓝图
+from routes import sync_config
+app.register_blueprint(sync_config.bp)
+
+# 导入并注册调度器API蓝图
+from routes import scheduler_api
+app.register_blueprint(scheduler_api.bp)
+
+# 导入并注册 Token 刷新蓝图
+from routes import token_refresh
+app.register_blueprint(token_refresh.bp)
+
 # 初始化日志系统
 logs.setup_logging(app)
 
@@ -79,6 +91,13 @@ logs.setup_logging(app)
 def index():
     """首页 - 仪表板"""
     return render_template('dashboard.html')
+
+
+@app.route('/server/<server_id>')
+@login_required
+def server_detail(server_id):
+    """服务器详情页"""
+    return render_template('server_detail.html', server_id=server_id)
 
 
 @app.route('/health')
@@ -117,7 +136,9 @@ def inject_globals():
 
 # 初始化定时任务调度器
 if os.getenv('FLASK_ENV') != 'development' or os.getenv('WERKZEUG_RUN_MAIN') == 'true':
-    init_scheduler(app, db_service)
+    from utils.config_manager import ConfigManager
+    config_manager = ConfigManager()
+    init_scheduler(app, db_service, config_manager)
 
 
 if __name__ == '__main__':
@@ -144,5 +165,7 @@ if __name__ == '__main__':
     app.logger.info('Flask 应用启动中...')
     app.logger.info(f'监听地址: {host}:{port}')
     app.logger.info(f'调试模式: {"开启" if debug else "关闭"}')
+    app.logger.info('启用多线程模式以支持 SSE 日志流')
     
-    app.run(host=host, port=port, debug=debug)
+    # 启用 threaded=True 以支持 SSE 长连接
+    app.run(host=host, port=port, debug=debug, threaded=True)

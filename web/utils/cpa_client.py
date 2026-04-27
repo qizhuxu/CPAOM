@@ -35,14 +35,22 @@ class CPAClient:
         data = response.json()
         return data.get("files", [])
     
-    def download_auth_file(self, filename: str) -> Optional[Dict]:
-        """下载认证文件"""
-        url = f"{self.base_url}/v0/management/auth-files/download"
-        response = self.session.get(url, params={"name": filename}, timeout=30)
+    def download_auth_file(self, filename: str) -> Tuple[bool, Optional[Dict]]:
+        """下载认证文件
         
-        if response.status_code == 200:
-            return response.json()
-        return None
+        Returns:
+            (success, data): 成功标志和认证文件数据
+        """
+        try:
+            url = f"{self.base_url}/v0/management/auth-files/download"
+            response = self.session.get(url, params={"name": filename}, timeout=30)
+            
+            if response.status_code == 200:
+                return True, response.json()
+            else:
+                return False, None
+        except Exception as e:
+            return False, None
     
     def upload_auth_file(self, auth_data: Dict, filename: str) -> Tuple[bool, str]:
         """上传认证文件"""
@@ -171,11 +179,11 @@ class CPAClient:
         except Exception as e:
             return False, {"error": str(e)}
     
-    def revive_token(self, email: str, filename: str, max_attempts: int = 3) -> Tuple[bool, str]:
-        """复活 Token"""
+    def refresh_token(self, email: str, filename: str, max_attempts: int = 3) -> Tuple[bool, str]:
+        """刷新 Token（OAuth refresh）"""
         # 下载完整认证文件
-        auth_data = self.download_auth_file(filename)
-        if not auth_data:
+        ok, auth_data = self.download_auth_file(filename)
+        if not ok or not auth_data:
             return False, "无法下载认证文件"
         
         refresh_token = auth_data.get("refresh_token")
@@ -197,7 +205,7 @@ class CPAClient:
                 upload_ok, upload_msg = self.upload_auth_file(auth_data, filename)
                 
                 if upload_ok:
-                    return True, "复活成功"
+                    return True, "刷新成功"
                 else:
                     return False, f"上传失败: {upload_msg}"
             else:
@@ -208,7 +216,7 @@ class CPAClient:
             if attempt < max_attempts:
                 time.sleep(2)
         
-        return False, f"复活失败（尝试 {max_attempts} 次）"
+        return False, f"刷新失败（尝试 {max_attempts} 次）"
     
     def download_config_yaml(self) -> Tuple[bool, str]:
         """下载 config.yaml"""

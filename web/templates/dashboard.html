@@ -3,240 +3,265 @@
 {% block title %}仪表板 - {{ app_name }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <h1 class="mb-4">
-        <i class="fas fa-home"></i> 仪表板
-    </h1>
-    
-    <!-- 统计卡片 -->
-    <div class="row" id="statsCards">
-        <div class="col-md-3">
-            <div class="stat-card">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="stat-label">服务器总数</div>
-                        <div class="stat-value text-primary" id="totalServers">-</div>
-                    </div>
-                    <div class="stat-icon text-primary">
-                        <i class="fas fa-server"></i>
-                    </div>
-                </div>
-            </div>
+<div class="page-header">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-md);">
+        <div>
+            <h1 class="page-title">服务器概览</h1>
+            <p class="page-subtitle">管理和监控所有 CPA 服务器</p>
         </div>
-        
-        <div class="col-md-3">
-            <div class="stat-card">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="stat-label">账号总数</div>
-                        <div class="stat-value text-success" id="totalAccounts">-</div>
-                    </div>
-                    <div class="stat-icon text-success">
-                        <i class="fas fa-users"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-3">
-            <div class="stat-card">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="stat-label">活跃账号</div>
-                        <div class="stat-value text-info" id="activeAccounts">-</div>
-                    </div>
-                    <div class="stat-icon text-info">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-3">
-            <div class="stat-card">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="stat-label">已禁用</div>
-                        <div class="stat-value text-danger" id="disabledAccounts">-</div>
-                    </div>
-                    <div class="stat-icon text-danger">
-                        <i class="fas fa-ban"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- 快速操作 -->
-    <div class="row mt-4">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
-                        <i class="fas fa-bolt"></i> 快速操作
-                    </h5>
-                    <button class="btn btn-primary btn-sm" onclick="showAddServerModal()">
-                        <i class="fas fa-plus"></i> 添加服务器
-                    </button>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-3">
-                            <div class="d-grid">
-                                <button class="btn btn-outline-primary btn-lg" onclick="showAccountsPage()">
-                                    <i class="fas fa-users fa-2x mb-2"></i>
-                                    <div>账号管理</div>
-                                    <small class="text-muted">查看和管理账号</small>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="d-grid">
-                                <button class="btn btn-outline-success btn-lg" onclick="showOperationsPage()">
-                                    <i class="fas fa-tasks fa-2x mb-2"></i>
-                                    <div>批量操作</div>
-                                    <small class="text-muted">下载/上传/复活</small>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="d-grid">
-                                <button class="btn btn-outline-info btn-lg" onclick="showSyncPage()">
-                                    <i class="fas fa-sync fa-2x mb-2"></i>
-                                    <div>同步备份</div>
-                                    <small class="text-muted">备份到本地数据库</small>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="d-grid">
-                                <button class="btn btn-outline-warning btn-lg" onclick="showLocalAccountsPage()">
-                                    <i class="fas fa-database fa-2x mb-2"></i>
-                                    <div>本地账号</div>
-                                    <small class="text-muted">查看本地备份</small>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- 最近活动 -->
-    <div class="row mt-4">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-history"></i> 最近活动
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div id="recentActivity">
-                        <p class="text-muted text-center">暂无活动记录</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <button class="btn" onclick="refreshServers()" id="refreshBtn">
+            <i class="fas fa-sync"></i>
+            刷新
+        </button>
     </div>
 </div>
 
-<!-- 添加服务器模态框 -->
-<div class="modal fade" id="addServerModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">添加服务器</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="addServerForm">
-                    <div class="mb-3">
-                        <label class="form-label">服务器名称</label>
-                        <input type="text" class="form-control" name="name" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Base URL</label>
-                        <input type="url" class="form-control" name="base_url" placeholder="https://your-cpa-server.com" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Management Token</label>
-                        <input type="text" class="form-control" name="token" placeholder="mgt-xxx" required>
-                    </div>
-                    <div class="form-check mb-3">
-                        <input class="form-check-input" type="checkbox" name="enable_token_revive" checked>
-                        <label class="form-check-label">启用 Token 自动复活</label>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                <button type="button" class="btn btn-primary" onclick="addServer()">添加</button>
-            </div>
-        </div>
-    </div>
+<!-- Servers Grid -->
+<div class="servers-grid" id="serversGrid">
+    <!-- Loading state -->
+    <div class="server-card loading-skeleton" style="height: 380px;"></div>
+    <div class="server-card loading-skeleton" style="height: 380px;"></div>
+    <div class="server-card loading-skeleton" style="height: 380px;"></div>
 </div>
+
+<!-- Empty State (hidden by default) -->
+<div class="empty-state" id="emptyState" style="display: none;">
+    <i class="fas fa-server"></i>
+    <div class="empty-state-title">还没有服务器</div>
+    <div class="empty-state-text">添加你的第一个 CPA 服务器开始管理账号</div>
+    <button class="btn btn-primary" onclick="showAddServerModal()">
+        <i class="fas fa-plus"></i>
+        添加服务器
+    </button>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
     let addServerModal;
+    let serverDetailModal;
     
+    let serversData = null; // 缓存服务器数据
+    let isLoading = false;
+    
+    // Load servers on page load (only if not cached)
     document.addEventListener('DOMContentLoaded', function() {
-        addServerModal = new bootstrap.Modal(document.getElementById('addServerModal'));
-        loadDashboardData();
+        loadServers();  // 直接从本地数据库加载
     });
     
-    async function loadDashboardData() {
+    // Refresh servers (manual)
+    async function refreshServers() {
+        if (isLoading) return;
+        
+        const btn = document.getElementById('refreshBtn');
+        const icon = btn.querySelector('i');
+        
+        isLoading = true;
+        icon.classList.add('fa-spin');
+        btn.disabled = true;
+        
         try {
-            // 加载统计数据
-            const stats = await apiCall('GET', '/api/stats/dashboard');
-            if (stats.success) {
-                document.getElementById('totalServers').textContent = stats.stats.total_servers;
-                document.getElementById('totalAccounts').textContent = stats.stats.total_accounts;
-                document.getElementById('activeAccounts').textContent = stats.stats.active_accounts;
-                document.getElementById('disabledAccounts').textContent = stats.stats.disabled_accounts;
-            }
+            await loadServers();  // 重新加载本地数据
+            showToast('刷新成功', 'success');
         } catch (error) {
-            console.error('加载数据失败:', error);
-            showToast('加载数据失败: ' + error.message, 'danger');
+            showToast('刷新失败: ' + error.message, 'danger');
+        } finally {
+            isLoading = false;
+            icon.classList.remove('fa-spin');
+            btn.disabled = false;
         }
     }
     
-    function showAddServerModal() {
-        document.getElementById('addServerForm').reset();
-        addServerModal.show();
-    }
-    
-    async function addServer() {
-        const form = document.getElementById('addServerForm');
-        const formData = new FormData(form);
-        
-        const data = {
-            name: formData.get('name'),
-            base_url: formData.get('base_url'),
-            token: formData.get('token'),
-            enable_token_revive: formData.get('enable_token_revive') === 'on'
-        };
+    // Load all servers (fast - from cache first)
+    async function loadServers(forceRefresh = false) {
+        const grid = document.getElementById('serversGrid');
+        const emptyState = document.getElementById('emptyState');
         
         try {
-            const result = await apiCall('POST', '/api/servers/', data);
+            // 从本地数据库加载
+            const result = await apiCall('GET', '/api/stats/servers-quick');
             
-            if (result.success) {
-                showToast('服务器添加成功', 'success');
-                addServerModal.hide();
-                loadDashboardData();
-            } else {
-                showToast(result.message, 'danger');
+            if (!result.servers || result.servers.length === 0) {
+                grid.style.display = 'none';
+                emptyState.style.display = 'block';
+                serversData = [];
+                return;
             }
+            
+            grid.style.display = 'grid';
+            emptyState.style.display = 'none';
+            
+            // 显示本地数据
+            serversData = result.servers;
+            renderServers(serversData);
+            updateGlobalStats(serversData);
+            
+            console.log(`加载了 ${serversData.length} 个服务器（本地数据）`);
+            
         } catch (error) {
-            showToast('添加失败: ' + error.message, 'danger');
+            console.error('Failed to load servers:', error);
+            showToast('加载服务器失败: ' + error.message, 'danger');
         }
     }
     
+    // Update global stats from servers data
+    function updateGlobalStats(servers) {
+        const totalServers = servers.length;
+        const totalAccounts = servers.reduce((sum, s) => sum + s.stats.total, 0);
+        const activeAccounts = servers.reduce((sum, s) => sum + s.stats.active, 0);
+        
+        document.getElementById('globalServers').textContent = totalServers;
+        document.getElementById('globalAccounts').textContent = totalAccounts;
+        document.getElementById('globalActive').textContent = activeAccounts;
+    }
+    
+    // Render server cards
+    function renderServers(servers) {
+        const grid = document.getElementById('serversGrid');
+        
+        grid.innerHTML = servers.map(server => {
+            // 格式化最后同步时间
+            let lastSyncText = '从未同步';
+            if (server.last_sync) {
+                const syncDate = new Date(server.last_sync);
+                const now = new Date();
+                const diffMs = now - syncDate;
+                const diffMins = Math.floor(diffMs / 60000);
+                const diffHours = Math.floor(diffMs / 3600000);
+                const diffDays = Math.floor(diffMs / 86400000);
+                
+                if (diffMins < 1) {
+                    lastSyncText = '刚刚';
+                } else if (diffMins < 60) {
+                    lastSyncText = `${diffMins} 分钟前`;
+                } else if (diffHours < 24) {
+                    lastSyncText = `${diffHours} 小时前`;
+                } else {
+                    lastSyncText = `${diffDays} 天前`;
+                }
+            }
+            
+            // 在线状态（仅在明确知道状态时显示）
+            let onlineIcon = '';
+            let onlineText = '';
+            if (server.online === true) {
+                onlineIcon = '<i class="fas fa-check-circle" style="color: var(--color-success);"></i>';
+                onlineText = '在线';
+            } else if (server.online === false) {
+                onlineIcon = '<i class="fas fa-times-circle" style="color: var(--color-danger);"></i>';
+                onlineText = '离线';
+            }
+            // 如果 online 为 undefined/null，不显示在线状态
+            
+            // 数据来源标识
+            const dataSource = server.from_cache 
+                ? '<span style="font-size: 11px; color: var(--color-text-tertiary);">(本地)</span>'
+                : '<span style="font-size: 11px; color: var(--color-success);">(云端)</span>';
+            
+            // 使用率显示
+            let usageDisplay = '';
+            if (server.stats.avg_usage_percent !== undefined && server.stats.usage_checked_count > 0) {
+                const usagePercent = server.stats.avg_usage_percent;
+                let usageColor = 'var(--color-success)';
+                if (usagePercent > 80) {
+                    usageColor = 'var(--color-danger)';
+                } else if (usagePercent > 50) {
+                    usageColor = 'var(--color-warning)';
+                }
+                
+                usageDisplay = `
+                    <div class="stat-item">
+                        <div class="stat-label">平均使用率</div>
+                        <div class="stat-value" style="color: ${usageColor};">${usagePercent.toFixed(1)}%</div>
+                    </div>
+                `;
+            }
+            
+            return `
+            <div class="server-card" data-status="${server.status}" onclick="window.location.href='/server/${server.id}'" style="cursor: pointer;">
+                <div class="server-card-content">
+                    <div class="server-header">
+                        <div>
+                            <div class="server-name">${server.name}</div>
+                            <div class="server-url">${server.base_url}</div>
+                        </div>
+                        <div class="server-status status-${server.status}">
+                            <span class="server-status-dot"></span>
+                            <span>${getStatusText(server.status)}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="server-stats">
+                        <div class="stat-item">
+                            <div class="stat-label">云端账号 ${dataSource}</div>
+                            <div class="stat-value">${server.stats.total}</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">活跃</div>
+                            <div class="stat-value success">${server.stats.active}</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">封禁</div>
+                            <div class="stat-value ${server.stats.disabled > 0 ? 'danger' : ''}">${server.stats.disabled}</div>
+                        </div>
+                        ${usageDisplay}
+                    </div>
+                    
+                    <!-- 额外信息 -->
+                    <div style="margin-top: var(--space-md); padding-top: var(--space-md); border-top: 1px solid var(--border-primary);">
+                        <div style="display: flex; flex-direction: column; gap: var(--space-sm); font-size: 13px; color: var(--color-text-secondary);">
+                            ${onlineText ? `
+                            <div style="display: flex; align-items: center; gap: var(--space-sm);">
+                                ${onlineIcon}
+                                <span>${onlineText}</span>
+                            </div>
+                            ` : ''}
+                            <div style="display: flex; align-items: center; gap: var(--space-sm);">
+                                <i class="fas fa-sync" style="width: 14px;"></i>
+                                <span>最后同步: ${lastSyncText}</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: var(--space-sm);">
+                                <i class="fas fa-database" style="width: 14px;"></i>
+                                <span>本地备份: ${server.local_backup_count} 个</span>
+                            </div>
+                            ${server.token_revive_enabled ? `
+                            <div style="display: flex; align-items: center; gap: var(--space-sm);">
+                                <i class="fas fa-magic" style="width: 14px; color: var(--color-warning);"></i>
+                                <span>Token 自动复活已启用</span>
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    
+                    <div class="server-actions" onclick="event.stopPropagation()">
+                        <button class="btn btn-sm" onclick="testServer('${server.id}')" style="flex: 1;">
+                            <i class="fas fa-vial"></i>
+                            测试连接
+                        </button>
+                        <button class="btn btn-sm btn-primary" onclick="syncServerNow('${server.id}')" style="flex: 1;">
+                            <i class="fas fa-sync"></i>
+                            立即同步
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `}).join('');
+    }
+    
+    function getStatusText(status) {
+        const statusMap = {
+            'healthy': '正常',
+            'warning': '警告',
+            'error': '错误'
+        };
+        return statusMap[status] || '未知';
+    }
+    
+    // Test server connection
     async function testServer(serverId) {
         try {
+            showToast('正在测试连接...', 'info');
             const result = await apiCall('POST', `/api/servers/${serverId}/test`);
             
             if (result.success) {
@@ -248,5 +273,39 @@
             showToast('测试失败: ' + error.message, 'danger');
         }
     }
+    
+    // Sync server now
+    async function syncServerNow(serverId) {
+        const btn = event.target.closest('button');
+        const icon = btn.querySelector('i');
+        
+        try {
+            icon.classList.add('fa-spin');
+            btn.disabled = true;
+            
+            showToast('开始同步...', 'info');
+            const result = await apiCall('POST', `/api/sync/${serverId}/enhanced`);
+            
+            if (result.success) {
+                showToast(`同步完成！处理了 ${result.total_processed} 个账号`, 'success');
+                // 刷新服务器数据
+                loadServers(true);
+            } else {
+                showToast(result.error || '同步失败', 'danger');
+            }
+        } catch (error) {
+            showToast('同步失败: ' + error.message, 'danger');
+        } finally {
+            icon.classList.remove('fa-spin');
+            btn.disabled = false;
+        }
+    }
+    
+    // Close modals on background click
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('modal')) {
+            e.target.classList.remove('show');
+        }
+    });
 </script>
 {% endblock %}

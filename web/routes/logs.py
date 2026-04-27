@@ -5,7 +5,7 @@
 
 import os
 import time
-from flask import Blueprint, Response, jsonify, stream_with_context, request
+from flask import Blueprint, Response, jsonify, request
 from flask_login import login_required
 from collections import deque
 from threading import Lock
@@ -65,63 +65,46 @@ log_handler = LogHandler()
 @login_required
 def stream_logs():
     """实时日志流 (Server-Sent Events)"""
+    import logging
+    import queue
+    
+    stream_logger = logging.getLogger(__name__)
+    stream_logger.info("新的日志流连接请求")
     
     def generate():
         """生成日志流"""
-        import queue
-        
-        # 创建订阅队列
         q = queue.Queue(maxsize=100)
         log_handler.subscribe(q)
         
         try:
-            # 首先发送缓冲区中的历史日志
-            with log_lock:
-                for log_entry in list(log_buffer):
-                    yield f"data: {format_log_entry(log_entry)}\n\n"
+            # 发送连接成功消息（不发送历史日志，避免阻塞）
+            yield "data: {\"message\": \"connected\"}\n\n"
+            stream_logger.info("日志流连接建立")
             
-            # 发送连接成功消息
-            yield f": connected\n\n"
-            
-            # 持续发送新日志，但限制时间避免无限阻塞
-            max_iterations = 3600  # 最多运行1小时（每秒一次心跳）
-            iterations = 0
-            
-            while iterations < max_iterations:
+            # 持续发送新日志
+            while True:
                 try:
-                    # 使用较短的超时，更快响应断开
-                    log_entry = q.get(timeout=5)
+                    log_entry = q.get(timeout=1)
                     yield f"data: {format_log_entry(log_entry)}\n\n"
                 except queue.Empty:
-                    # 发送心跳保持连接
-                    yield f": heartbeat\n\n"
-                    iterations += 1
+                    yield ": heartbeat\n\n"
                 except:
-                    # 任何异常都退出
                     break
                     
         except GeneratorExit:
-            # 客户端断开连接
-            pass
-        except Exception as e:
-            # 记录错误但不崩溃
-            import logging
-            logging.getLogger(__name__).error(f"日志流错误: {e}")
+            stream_logger.info("客户端断开连接")
         finally:
-            # 确保取消订阅
             log_handler.unsubscribe(q)
+            stream_logger.info("日志流已关闭")
     
-    response = Response(
-        stream_with_context(generate()),
+    return Response(
+        generate(),
         mimetype='text/event-stream',
         headers={
             'Cache-Control': 'no-cache',
-            'X-Accel-Buffering': 'no',
-            'Connection': 'keep-alive'
+            'X-Accel-Buffering': 'no'
         }
     )
-    
-    return response
 
 
 @bp.route('/history')
